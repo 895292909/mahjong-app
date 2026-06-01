@@ -121,7 +121,7 @@ Page({
 
         api.getOwnerStats(hallId, token).then(function(stats) { that.setData({ stats: stats }); }).catch(function() {});
       }).catch(function() {});
-    }, 5000);
+    }, 10000);
   },
 
   stopPolling: function() {

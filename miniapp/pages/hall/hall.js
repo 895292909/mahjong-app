@@ -53,7 +53,7 @@ Page({
   startPolling() {
     this.pollTimer = setInterval(() => {
       this.loadTablesSilent();
-    }, 5000);
+    }, 10000);
   },
 
   stopPolling() {

@@ -8,8 +8,9 @@ function request(method, path, data, token) {
   return new Promise((resolve, reject) => {
     wx.request({
       url: BASE_URL + path,
-      method,
-      data,
+      method: method,
+      data: data,
+      timeout: 15000,
       header: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: 'Bearer ' + token } : {}),
