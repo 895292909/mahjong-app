@@ -97,24 +97,24 @@
       </view>
       <view wx:if="{{tables.length === 0}}" class="empty">暂无牌桌</view>
       <view wx:else class="monitor-list">
-        <view class="monitor-table {{t.status === 'playing' ? 'playing' : ''}}" wx:for="{{tables}}" wx:key="id" id="mon-{{t.id}}">
+        <view class="monitor-table {{item.status === 'playing' ? 'playing' : ''}}" wx:for="{{tables}}" wx:key="id" id="mon-{{item.id}}">
           <view class="mon-top">
-            <text class="mon-name">{{t.tableNumber}}</text>
-            <text class="tag tag-{{t.status}}">{{statusMap[t.status]}}</text>
+            <text class="mon-name">{{item.tableNumber}}</text>
+            <text class="tag tag-{{item.status}}">{{statusMap[item.status]}}</text>
           </view>
           <view class="mon-mid">
-            <text>🧑 {{t.currentPlayers}}/{{t.maxPlayers}}人</text>
-            <text wx:if="{{t.ownerNickname}}">👑 {{t.ownerNickname}}</text>
-            <text>🎯 底分 {{t.baseScore}}</text>
+            <text>🧑 {{item.currentPlayers}}/{{item.maxPlayers}}人</text>
+            <text wx:if="{{item.ownerNickname}}">👑 {{item.ownerNickname}}</text>
+            <text>🎯 底分 {{item.baseScore}}</text>
           </view>
-          <view class="mon-players" wx:if="{{t.players && t.players.length > 0}}">
-            <text class="mon-player" wx:for="{{t.players}}" wx:key="id">
+          <view class="mon-players" wx:if="{{item.players && item.players.length > 0}}">
+            <text class="mon-player" wx:for="{{item.players}}" wx:key="id">
               <text class="mini-avatar" style="background:{{playerColors[index % 4]}}">{{item.nickname.charAt(0)}}</text>
               {{item.nickname}}
             </text>
           </view>
-          <view class="mon-actions" wx:if="{{t.status === 'playing'}}">
-            <button class="btn btn-sm btn-gold" data-tableid="{{t.id}}" bindtap="showContacts">📞 查看联系方式</button>
+          <view class="mon-actions" wx:if="{{item.status === 'playing'}}">
+            <button class="btn btn-sm btn-gold" data-tableid="{{item.id}}" bindtap="showContacts">📞 查看联系方式</button>
           </view>
         </view>
       </view>
@@ -131,13 +131,13 @@
         <text style="display:block;margin-top:12rpx">暂无通知</text>
       </view>
       <view wx:else class="notif-list">
-        <view class="notif-item {{n.read ? '' : 'unread'}}" wx:for="{{notifications}}" wx:key="id" data-tabid="{{n.tableId}}" bindtap="goToTable">
+        <view class="notif-item {{item.read ? '' : 'unread'}}" wx:for="{{notifications}}" wx:key="id" data-tabid="{{item.tableId}}" bindtap="goToTable">
           <view class="notif-icon">🀄</view>
           <view class="notif-body">
-            <text class="notif-msg">{{n.message}}</text>
-            <text class="notif-time">{{n.time}}</text>
+            <text class="notif-msg">{{item.message}}</text>
+            <text class="notif-time">{{item.time}}</text>
           </view>
-          <text class="notif-read-btn" wx:if="{{!n.read}}" data-idx="{{index}}" bindtap="markRead" catchtap>标已读</text>
+          <text class="notif-read-btn" wx:if="{{!item.read}}" data-idx="{{index}}" bindtap="markRead" catchtap>标已读</text>
         </view>
       </view>
     </view>
@@ -151,8 +151,8 @@
       </view>
       <view wx:else class="audit-list">
         <view class="audit-item" wx:for="{{auditLogs}}" wx:key="id">
-          <view class="audit-left">🀄 {{n.message || '查看联系方式'}}</view>
-          <text class="audit-time">{{n.time}}</text>
+          <view class="audit-left">🀄 {{item.message || '查看联系方式'}}</view>
+          <text class="audit-time">{{item.time}}</text>
         </view>
       </view>
     </view>
