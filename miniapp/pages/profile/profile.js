@@ -1,5 +1,5 @@
-const api = require('../../utils/api');
-const app = getApp();
+var api = require('../../utils/api');
+var app = getApp();
 
 Page({
   data: {
@@ -25,16 +25,16 @@ Page({
 
   phoneCode: '',
 
-  onLoad() {
-    const player = app.getPlayer();
-    const openid = wx.getStorageSync('wechatOpenid');
+  onLoad: function() {
+    var player = app.getPlayer();
+    var openid = wx.getStorageSync('wechatOpenid');
     if (openid) {
       app.globalData.wechatOpenid = openid;
       this.setData({
         wechatLogged: true,
         wechatOpenid: openid,
-        wechatNickname: player?.nickname || '',
-        wechatPhone: player?.phone || '',
+        wechatNickname: player && player.nickname ? player.nickname : '',
+        wechatPhone: player && player.phone ? player.phone : '',
       });
     }
     if (player) this.loadPlayer(player);
@@ -42,16 +42,17 @@ Page({
     this.refreshPhoneCode();
   },
 
-  refreshPhoneCode() {
-    wx.login({ success: (res) => { this.phoneCode = res.code; } });
+  refreshPhoneCode: function() {
+    var that = this;
+    wx.login({ success: function(res) { that.phoneCode = res.code; } });
   },
 
-  onShow() {
-    const player = app.getPlayer();
+  onShow: function() {
+    var player = app.getPlayer();
     if (player) this.loadPlayer(player);
   },
 
-  loadPlayer(player) {
+  loadPlayer: function(player) {
     this.setData({
       formNickname: player.nickname,
       formPhone: player.phone || '',
@@ -61,66 +62,86 @@ Page({
     });
   },
 
-  getPrivacyText(val) {
-    const opt = this.data.privacyOptions.find(o => o.value === val);
-    return opt ? opt.name : '同局玩家可见';
+  getPrivacyText: function(val) {
+    var opts = this.data.privacyOptions;
+    for (var i = 0; i < opts.length; i++) {
+      if (opts[i].value === val) return opts[i].name;
+    }
+    return '同局玩家可见';
   },
 
-  getPrivacyIdx(val) {
-    const idx = this.data.privacyOptions.findIndex(o => o.value === val);
-    return idx >= 0 ? idx : 0;
+  getPrivacyIdx: function(val) {
+    var opts = this.data.privacyOptions;
+    for (var i = 0; i < opts.length; i++) {
+      if (opts[i].value === val) return i;
+    }
+    return 0;
   },
 
-  checkOwner() {
-    const name = wx.getStorageSync('ownerName');
+  checkOwner: function() {
+    var name = wx.getStorageSync('ownerName');
     if (name) this.setData({ hasOwner: true, ownerName: name });
   },
 
   // ===== 微信登录 =====
-  wechatLoginBtn() {
-    const agreed = wx.getStorageSync('agreed');
+  wechatLoginBtn: function() {
+    var that = this;
+    var agreed = wx.getStorageSync('agreed');
     if (!agreed) {
-      app.showAgreement().then(() => this.doWechatLogin()).catch(() => {});
+      wx.showModal({
+        title: '用户协议',
+        content: '尊敬的用户，欢迎使用麻将排桌小程序。\n\n1. 信息收集\n我们可能会收集您的微信昵称、手机号及微信号等信息。\n\n2. 信息使用\n您的联系方式仅在同局玩家和麻将馆老板查看时使用，所有查看操作均记录审计日志。\n\n3. 信息保护\n您的手机号将经过加密存储。\n\n4. 隐私选择\n您可以在"我的"页面中设置联系方式可见性。',
+        confirmText: '同意',
+        cancelText: '退出',
+        success: function(res) {
+          if (res.confirm) {
+            wx.setStorageSync('agreed', true);
+            that.startWechatLogin();
+          }
+        },
+      });
     } else {
-      this.doWechatLogin();
+      that.startWechatLogin();
     }
   },
 
-  doWechatLogin() {
+  startWechatLogin: function() {
+    var that = this;
     wx.showLoading({ title: '登录中...' });
     wx.login({
-      success: (loginRes) => {
-        api.wechatLogin(loginRes.code).then(data => {
-          const openid = data.openid;
-          const existing = app.getPlayer();
-          const nickname = existing?.nickname || app.generateNickname();
-          api.wechatBindUser({ openid, nickname, avatarUrl: '' }).then(bindRes => {
+      success: function(loginRes) {
+        api.wechatLogin(loginRes.code).then(function(data) {
+          var openid = data.openid;
+          var existing = app.getPlayer();
+          var nickname = existing && existing.nickname ? existing.nickname : app.generateNickname();
+          api.wechatBindUser({ openid: openid, nickname: nickname, avatarUrl: '' }).then(function(bindRes) {
             wx.setStorageSync('wechatOpenid', openid);
             app.globalData.wechatOpenid = openid;
             if (!existing) {
-              app.setPlayer({ id: bindRes.id, nickname: bindRes.nickname, openid });
-              this.setData({ formNickname: bindRes.nickname, wechatNickname: bindRes.nickname });
+              app.setPlayer({ id: bindRes.id, nickname: bindRes.nickname, openid: openid });
+              that.setData({ formNickname: bindRes.nickname, wechatNickname: bindRes.nickname });
             }
             wx.hideLoading();
-            this.setData({ wechatLogged: true, wechatOpenid: openid });
+            that.setData({ wechatLogged: true, wechatOpenid: openid });
             wx.showToast({ title: '微信登录成功', icon: 'none' });
-          }).catch(err => { wx.hideLoading(); wx.showModal({ title: '登录失败', content: err.message, showCancel: false }); });
-        }).catch(err => { wx.hideLoading(); wx.showModal({ title: '登录失败', content: err.message, showCancel: false }); });
+          }).catch(function(err) { wx.hideLoading(); wx.showModal({ title: '登录失败', content: err.message, showCancel: false }); });
+        }).catch(function(err) { wx.hideLoading(); wx.showModal({ title: '登录失败', content: err.message, showCancel: false }); });
       },
-      fail: () => { wx.hideLoading(); wx.showToast({ title: '微信登录失败', icon: 'none' }); },
+      fail: function() { wx.hideLoading(); wx.showToast({ title: '微信登录失败', icon: 'none' }); },
     });
   },
 
   // ===== 获取手机号 =====
-  onGetPhoneNumber(e) {
+  onGetPhoneNumber: function(e) {
+    var that = this;
     if (e.detail.errMsg !== 'getPhoneNumber:ok') {
       wx.showModal({ title: '授权失败', content: e.detail.errMsg, showCancel: false });
       return;
     }
-    const openid = this.data.wechatOpenid || app.globalData.wechatOpenid;
+    var openid = this.data.wechatOpenid || app.globalData.wechatOpenid;
     if (!openid) { wx.showToast({ title: '请先微信登录', icon: 'none' }); return; }
     wx.showLoading({ title: '获取中...' });
-    const body = { openid };
+    var body = { openid: openid };
     if (e.detail.code) {
       body.phoneCode = e.detail.code;
     } else if (e.detail.encryptedData) {
@@ -132,76 +153,77 @@ Page({
       wx.showModal({ title: '获取失败', content: '微信版本不支持获取手机号，请手动输入', showCancel: false });
       return;
     }
-    api.wechatBindPhone(body).then(data => {
+    api.wechatBindPhone(body).then(function(data) {
       wx.hideLoading();
       wx.showModal({
         title: '手机号确认',
         content: '是否使用 ' + data.phone + ' 作为您的手机号？',
         confirmText: '确定', cancelText: '取消',
-        success: (res) => {
+        success: function(res) {
           if (res.confirm) {
-            this.setData({ formPhone: data.phone, wechatPhone: data.phone });
+            that.setData({ formPhone: data.phone, wechatPhone: data.phone });
             wx.showToast({ title: '手机号已绑定', icon: 'none' });
           }
         },
       });
-    }).catch(err => {
+    }).catch(function(err) {
       wx.hideLoading();
       wx.showModal({ title: '获取失败', content: err.message, showCancel: false });
     });
   },
 
   // ===== 表单 =====
-  onNicknameInput(e) { this.data.formNickname = e.detail.value; },
-  onPhoneInput(e) { this.data.formPhone = e.detail.value; },
-  onWechatInput(e) { this.data.formWechat = e.detail.value; },
-  onPrivacyChange(e) {
-    const idx = e.detail.value;
+  onNicknameInput: function(e) { this.data.formNickname = e.detail.value; },
+  onPhoneInput: function(e) { this.data.formPhone = e.detail.value; },
+  onWechatInput: function(e) { this.data.formWechat = e.detail.value; },
+  onPrivacyChange: function(e) {
+    var idx = e.detail.value;
     this.setData({ privacyIdx: idx, privacyText: this.data.privacyOptions[idx].name });
   },
 
-  // ===== 保存（必须联网同步到服务端）=====
-  saveProfile() {
-    const nickname = this.data.formNickname;
-    const phone = this.data.formPhone;
-    const wechatId = this.data.formWechat;
-    const privacySetting = this.data.privacyOptions[this.data.privacyIdx].value;
+  // ===== 保存 =====
+  saveProfile: function() {
+    var that = this;
+    var nickname = this.data.formNickname;
+    var phone = this.data.formPhone;
+    var wechatId = this.data.formWechat;
+    var privacySetting = this.data.privacyOptions[this.data.privacyIdx].value;
 
     if (!nickname) { wx.showToast({ title: '请输入昵称', icon: 'none' }); return; }
     if (!phone || phone.length < 11) { wx.showToast({ title: '请输入正确的手机号', icon: 'none' }); return; }
 
     wx.showLoading({ title: '保存中...' });
-    const existing = app.getPlayer();
+    var existing = app.getPlayer();
 
-    const saveToLocal = (data) => {
+    var saveToLocal = function(data) {
       app.setPlayer(data);
       wx.hideLoading();
       wx.showToast({ title: '已保存', icon: 'success' });
-      this.loadPlayer(data);
+      that.loadPlayer(data);
     };
 
     if (existing && existing.id) {
-      api.updatePlayer(existing.id, { phone, wechatId, privacySetting })
-        .then(data => {
+      api.updatePlayer(existing.id, { phone: phone, wechatId: wechatId, privacySetting: privacySetting })
+        .then(function(data) {
           data.nickname = nickname;
           if (existing.openid) data.openid = existing.openid;
           saveToLocal(data);
         })
-        .catch(() => {
+        .catch(function() {
           wx.hideLoading();
           wx.showModal({ title: '保存失败', content: '无法连接服务器，请稍后重试', showCancel: false });
         });
     } else {
-      api.createPlayer({ nickname, phone, wechatId, privacySetting })
-        .then(data => {
-          const openid = existing?.openid || wx.getStorageSync('wechatOpenid');
+      api.createPlayer({ nickname: nickname, phone: phone, wechatId: wechatId, privacySetting: privacySetting })
+        .then(function(data) {
+          var openid = existing && existing.openid ? existing.openid : wx.getStorageSync('wechatOpenid');
           if (openid) data.openid = openid;
           saveToLocal(data);
           if (openid) {
-            api.wechatBindUser({ openid, nickname, avatarUrl: '' }).catch(() => {});
+            api.wechatBindUser({ openid: openid, nickname: nickname, avatarUrl: '' }).catch(function() {});
           }
         })
-        .catch(() => {
+        .catch(function() {
           wx.hideLoading();
           wx.showModal({ title: '保存失败', content: '无法连接服务器，请稍后重试', showCancel: false });
         });
@@ -209,13 +231,14 @@ Page({
   },
 
   // ===== 老板退出 =====
-  logoutOwner() {
+  logoutOwner: function() {
+    var that = this;
     wx.showModal({
       title: '确认', content: '确定退出老板账号？',
-      success: (res) => {
+      success: function(res) {
         if (!res.confirm) return;
         app.clearOwnerInfo();
-        this.setData({ hasOwner: false, ownerName: '' });
+        that.setData({ hasOwner: false, ownerName: '' });
         wx.showToast({ title: '已退出', icon: 'none' });
       },
     });
