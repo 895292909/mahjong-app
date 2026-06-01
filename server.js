@@ -61,13 +61,22 @@ app.get('/debug/db', async (req, res) => {
 
 io.on('connection', (socket) => setupSocket(socket, io));
 
+process.on('unhandledRejection', (err) => {
+  console.error('未捕获的 Promise 错误:', err.message);
+});
+
 const PORT = process.env.PORT || 3000;
 
 initDatabase().then(() => {
+  console.log('数据库初始化成功');
   server.listen(PORT, () => {
     console.log(`麻将馆管理系统运行在 http://localhost:${PORT}`);
   });
 }).catch(err => {
   console.error('数据库初始化失败:', err.message);
-  process.exit(1);
+  console.error(err.stack);
+  // 即使数据库失败也让服务器启动，方便调试
+  server.listen(PORT, () => {
+    console.log(`服务器运行在 http://localhost:${PORT}（数据库未连接）`);
+  });
 });
