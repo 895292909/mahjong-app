@@ -97,7 +97,7 @@
           <button wx:if="{{item.isMe}}" class="btn btn-sm btn-danger" bindtap="confirmLeave">离座</button>
         </view>
       </view>
-      <button wx:if="{{isOwner && detailTable.status === 'waiting'}}" class="btn btn-gold btn-block" bindtap="showSettings">⚙️ 设置</button>
+      <button wx:if="{{isOwner && detailTable.status !== 'finished'}}" class="btn btn-gold btn-block" bindtap="showSettings">⚙️ 设置</button>
     </view>
     <button class="btn btn-secondary btn-block" bindtap="closeDetailModal">关闭</button>
   </view>
