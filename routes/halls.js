@@ -35,6 +35,7 @@ router.get('/:id', async (req, res) => {
       currentPlayers: t.current_players,
       maxPlayers: t.max_players,
       baseScore: t.base_score,
+      ownerId: t.owner_id,
       ownerNickname: t.ownerNickname,
       players: (t.players || []).map(p => ({
         id: p.id,
