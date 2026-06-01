@@ -37,6 +37,6 @@ Page({
   },
 
   goProfile() {
-    wx.navigateTo({ url: '/pages/profile/profile' });
+    wx.switchTab({ url: '/pages/profile/profile' });
   },
 });

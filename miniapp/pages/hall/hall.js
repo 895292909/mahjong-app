@@ -138,7 +138,7 @@ Page({
     const player = app.getPlayer();
     if (!player) {
       wx.showModal({ title: '提示', content: '请先在「我的」设置个人信息', success: () => {
-        wx.navigateTo({ url: '/pages/profile/profile' });
+        wx.switchTab({ url: '/pages/profile/profile' });
       }});
       return;
     }
@@ -179,7 +179,7 @@ Page({
     const player = app.getPlayer();
     if (!player || !player.id) {
       wx.showModal({ title: '提示', content: '请先在「我的」保存个人信息', success: () => {
-        wx.navigateTo({ url: '/pages/profile/profile' });
+        wx.switchTab({ url: '/pages/profile/profile' });
       }});
       return;
     }
