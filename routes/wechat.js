@@ -63,14 +63,27 @@ router.post('/bind-user', (req, res) => {
 
 /**
  * 解密微信手机号（getPhoneNumber 授权）
+ * 前端需要先 wx.login() 获取新 code，一起传过来换取 session_key
  */
-router.post('/bind-phone', (req, res) => {
+router.post('/bind-phone', async (req, res) => {
   try {
-    const { openid, encryptedData, iv } = req.body;
+    const { openid, encryptedData, iv, code } = req.body;
     if (!openid || !encryptedData || !iv) return fail(res, '参数不完整');
 
-    const sessionKey = sessionCache.get(openid);
-    if (!sessionKey) return fail(res, 'session_key 已过期，请重新登录', 401);
+    let sessionKey = sessionCache.get(openid);
+    if (code) {
+      // 前端传了新 code，重新换取 session_key
+      const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${encodeURIComponent(wechat.appid)}&secret=${encodeURIComponent(wechat.secret)}&js_code=${encodeURIComponent(code)}&grant_type=authorization_code`;
+      const wxResp = await fetch(url);
+      const wxData = await wxResp.json();
+      if (wxData.errcode) {
+        return fail(res, `微信验证失败(${wxData.errcode}): ${wxData.errmsg}`, 400);
+      }
+      sessionKey = wxData.session_key;
+      sessionCache.set(openid, sessionKey);
+    }
+
+    if (!sessionKey) return fail(res, 'session_key 不存在，请先 wx.login', 401);
 
     // AES-128-CBC 解密（微信规范）
     const aesKey = Buffer.from(sessionKey, 'base64');
