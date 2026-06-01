@@ -50,11 +50,11 @@ function updatePlayer(id, data) {
 }
 
 // ===== 牌桌 =====
-function joinTable(tableId, playerId, seatNumber) {
-  return request('POST', '/api/tables/join', { tableId, playerId, seatNumber });
+function joinTable(tableId, playerId, seatNumber, hallId) {
+  return request('POST', '/api/tables/join', { tableId, playerId, seatNumber, hallId });
 }
-function leaveTable(tableId, playerId) {
-  return request('POST', '/api/tables/leave', { tableId, playerId });
+function leaveTable(tableId, playerId, hallId) {
+  return request('POST', '/api/tables/leave', { tableId, playerId, hallId });
 }
 function updateTableSettings(tableId, data) {
   return request('PUT', '/api/tables/' + tableId + '/settings', data);

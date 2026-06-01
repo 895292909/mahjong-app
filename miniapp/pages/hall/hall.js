@@ -4,6 +4,8 @@ const app = getApp();
 const COLORS = ['#e84a5f', '#4a90d9', '#f5a623', '#7ed321'];
 const STATUS_MAP = { waiting: '等待中', playing: '已成局', finished: '已结束' };
 
+let prevPlayingCount = 0;
+
 Page({
   data: {
     hallId: null,
@@ -13,35 +15,33 @@ Page({
     onlineCount: 0,
     statusMap: STATUS_MAP,
 
-    // 座位选取弹窗
     showSeatModal: false,
     selectedSeat: null,
     seatTaken: {},
 
-    // 详情弹窗
     showDetailModal: false,
     detailTable: null,
     detailSeats: [],
     isOwner: false,
 
-    // 设置弹窗
     showSettingsModal: false,
     settingsScore: 0,
     settingsScoreValue: '1',
+    settingsStartTime: '',
     scoreOptions: ['1', '2', '5', '10', '20'],
 
-    // 离座确认
     showLeaveConfirm: false,
   },
 
-  // 内部状态
   joinTarget: null,
   leaveTarget: null,
   pollTimer: null,
+  previousTables: [],
 
   onLoad(options) {
     const hallId = parseInt(options.hallId);
     this.data.hallId = hallId;
+    prevPlayingCount = 0;
     this.loadData();
     this.startPolling();
   },
@@ -69,10 +69,13 @@ Page({
       .then(data => {
         this.data.hallName = data.name;
         const tables = this.buildTables(data.tables || []);
+        prevPlayingCount = tables.filter(t => t.status === 'playing').length;
+        this.previousTables = tables;
         this.setData({
           hallName: data.name,
           tables,
           loading: false,
+          onlineCount: data.emptyTables, // 用空桌数替代在线人数
         });
       })
       .catch(err => {
@@ -85,7 +88,15 @@ Page({
     api.getHallDetail(this.data.hallId)
       .then(data => {
         const tables = this.buildTables(data.tables || []);
-        this.setData({ tables });
+        const playing = tables.filter(t => t.status === 'playing');
+
+        // 检测新成局 → 撒花
+        if (playing.length > prevPlayingCount) {
+          this.showConfetti();
+        }
+        prevPlayingCount = playing.length;
+
+        this.setData({ tables, onlineCount: data.emptyTables });
       })
       .catch(() => {});
   },
@@ -94,16 +105,13 @@ Page({
     return tables.map(t => {
       const seats = [{}, {}, {}, {}];
       const occupied = {};
-      (t.players || []).forEach(p => {
-        occupied[p.seatNumber] = p;
-      });
+      (t.players || []).forEach(p => { occupied[p.seatNumber] = p; });
       for (let i = 0; i < 4; i++) {
         const pos = ['top', 'right', 'bottom', 'left'][i];
         const p = occupied[i + 1];
         if (p) {
           seats[i] = {
-            taken: true,
-            pos,
+            taken: true, pos,
             cls: 'occupied',
             initial: p.nickname.charAt(0),
             color: COLORS[(p.id || i) % 4],
@@ -118,7 +126,12 @@ Page({
     });
   },
 
-  // 点击座位 → 直接加入
+  // ===== 撒花 =====
+  showConfetti() {
+    wx.showToast({ title: '🎉 已成局！', icon: 'none' });
+  },
+
+  // ===== 点击座位 =====
   tapSeat(e) {
     const tableId = e.currentTarget.dataset.tableid;
     const seat = e.currentTarget.dataset.seat;
@@ -129,20 +142,15 @@ Page({
       }});
       return;
     }
-    // 检查该桌该座位是否已被占
     const table = this.data.tables.find(t => t.id === tableId);
     if (!table) return;
     const p = (table.players || []).find(p => p.seatNumber === seat);
-    if (p) {
-      wx.showToast({ title: '该座位已被占用', icon: 'none' });
-      return;
-    }
-    // 显示加入确认
+    if (p) { wx.showToast({ title: '该座位已被占用', icon: 'none' }); return; }
     this.data.joinTarget = { tableId, seatNumber: seat };
     this.joinTable();
   },
 
-  // 显示详情
+  // ===== 详情弹窗 =====
   showTableDetail(e) {
     const tableId = e.currentTarget.dataset.id;
     const t = this.data.tables.find(t => t.id === tableId);
@@ -152,12 +160,8 @@ Page({
     const seats = [1, 2, 3, 4].map(n => {
       const p = (t.players || []).find(p => p.seatNumber === n);
       return {
-        seat: n,
-        taken: !!p,
-        nickname: p ? p.nickname : '',
-        isOwner: p ? p.isOwner : false,
-        isMe: p && p.id === myId,
-        id: p ? p.id : null,
+        seat: n, taken: !!p, nickname: p ? p.nickname : '',
+        isOwner: p ? p.isOwner : false, isMe: p && p.id === myId, id: p ? p.id : null,
       };
     });
     this.setData({
@@ -168,9 +172,7 @@ Page({
     });
   },
 
-  closeDetailModal() {
-    this.setData({ showDetailModal: false });
-  },
+  closeDetailModal() { this.setData({ showDetailModal: false }); },
 
   quickJoin(e) {
     const seat = parseInt(e.currentTarget.dataset.seat);
@@ -181,55 +183,46 @@ Page({
     this.joinTable();
   },
 
-  // 加入
+  // ===== 加入 =====
   joinTable() {
     const target = this.data.joinTarget;
     if (!target) return;
     const player = app.getPlayer();
     if (!player) { wx.showToast({ title: '请先设置个人信息', icon: 'none' }); return; }
-
     wx.showLoading({ title: '加入中...' });
-    api.joinTable(target.tableId, player.id, target.seatNumber)
+    api.joinTable(target.tableId, player.id, target.seatNumber, this.data.hallId)
       .then(() => {
         wx.hideLoading();
         wx.showToast({ title: '🎉 加入成功', icon: 'none' });
         this.setData({ showSeatModal: false });
         this.loadTablesSilent();
       })
-      .catch(err => {
-        wx.hideLoading();
-        wx.showToast({ title: err.message, icon: 'none' });
-      });
+      .catch(err => { wx.hideLoading(); wx.showToast({ title: err.message, icon: 'none' }); });
   },
 
-  // 离座
+  // ===== 离座 =====
   confirmLeave() {
     const player = app.getPlayer();
     if (!player) return;
     this.data.leaveTarget = { tableId: this.data.detailTable.id, playerId: player.id };
     this.setData({ showLeaveConfirm: true, showDetailModal: false });
   },
-  closeLeaveConfirm() {
-    this.setData({ showLeaveConfirm: false });
-  },
+  closeLeaveConfirm() { this.setData({ showLeaveConfirm: false }); },
   doLeave() {
     const target = this.data.leaveTarget;
     if (!target) return;
     wx.showLoading({ title: '离座中...' });
-    api.leaveTable(target.tableId, target.playerId)
+    api.leaveTable(target.tableId, target.playerId, this.data.hallId)
       .then(() => {
         wx.hideLoading();
         wx.showToast({ title: '已离座', icon: 'none' });
         this.setData({ showLeaveConfirm: false });
         this.loadTablesSilent();
       })
-      .catch(err => {
-        wx.hideLoading();
-        wx.showToast({ title: err.message, icon: 'none' });
-      });
+      .catch(err => { wx.hideLoading(); wx.showToast({ title: err.message, icon: 'none' }); });
   },
 
-  // 设置
+  // ===== 设置 =====
   showSettings() {
     const t = this.data.detailTable;
     const idx = ['1', '2', '5', '10', '20'].indexOf(String(t.baseScore));
@@ -237,35 +230,40 @@ Page({
       showSettingsModal: true,
       settingsScore: idx >= 0 ? idx : 0,
       settingsScoreValue: this.data.scoreOptions[idx >= 0 ? idx : 0],
+      settingsStartTime: '',
     });
   },
-  closeSettingsModal() {
-    this.setData({ showSettingsModal: false });
-  },
+  closeSettingsModal() { this.setData({ showSettingsModal: false }); },
   onScoreChange(e) {
     const val = this.data.scoreOptions[e.detail.value];
     this.setData({ settingsScore: e.detail.value, settingsScoreValue: val });
+  },
+  onStartTimeChange(e) {
+    this.setData({ settingsStartTime: e.detail.value });
   },
   saveSettings() {
     const player = app.getPlayer();
     if (!player) return;
     const tableId = this.data.detailTable.id;
     const baseScore = parseInt(this.data.settingsScoreValue);
+    const body = { playerId: player.id, baseScore };
+    if (this.data.settingsStartTime) {
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10);
+      body.startTime = dateStr + 'T' + this.data.settingsStartTime + ':00';
+    }
     wx.showLoading({ title: '保存中...' });
-    api.updateTableSettings(tableId, { playerId: player.id, baseScore })
+    api.updateTableSettings(tableId, body)
       .then(() => {
         wx.hideLoading();
         wx.showToast({ title: '设置已更新', icon: 'none' });
         this.setData({ showSettingsModal: false });
         this.loadTablesSilent();
       })
-      .catch(err => {
-        wx.hideLoading();
-        wx.showToast({ title: err.message, icon: 'none' });
-      });
+      .catch(err => { wx.hideLoading(); wx.showToast({ title: err.message, icon: 'none' }); });
   },
 
-  // 通用弹窗
+  // ===== 弹窗 =====
   showModal() { this.setData({ showSeatModal: true }); },
   closeModal() { this.setData({ showSeatModal: false, selectedSeat: null }); },
 });

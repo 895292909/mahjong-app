@@ -2,13 +2,12 @@
   <!-- ===== 登录 ===== -->
   <view wx:if="{{!loggedIn}}" class="login-box">
     <view class="login-card">
-      <!-- Tab 切换 -->
       <view class="login-tabs">
         <view class="login-tab {{loginTab === 'login' ? 'active' : ''}}" data-tab="login" bindtap="switchLoginTab">登录</view>
         <view class="login-tab {{loginTab === 'register' ? 'active' : ''}}" data-tab="register" bindtap="switchLoginTab">入驻</view>
       </view>
 
-      <!-- 登录表单 -->
+      <!-- 登录 -->
       <view wx:if="{{loginTab === 'login'}}">
         <view class="form-group">
           <text class="form-label">选择麻将馆</text>
@@ -23,16 +22,28 @@
         <button class="btn btn-primary btn-block" bindtap="doLogin">登录</button>
       </view>
 
-      <!-- 入驻表单 -->
+      <!-- 入驻 -->
       <view wx:else>
         <view class="form-group">
           <text class="form-label">麻将馆名称 <text style="color:var(--red)">*</text></text>
           <input class="form-input" placeholder="如：聚友麻将馆" bindinput="onRegNameInput"/>
-          <text class="form-hint">名称已存在时可加地点区分（如"聚友-海淀店"）</text>
+          <text class="form-hint">名称已存在时可加地点区分</text>
         </view>
         <view class="form-group">
           <text class="form-label">地址（选填）</text>
           <input class="form-input" placeholder="如：海淀区学院路100号" bindinput="onRegAddrInput"/>
+        </view>
+        <view class="form-group">
+          <text class="form-label">营业时间（选填）</text>
+          <view class="time-row">
+            <picker mode="time" value="{{regOpenTime}}" bindchange="onRegOpenTime">
+              <view class="form-input time-input">{{regOpenTime}}</view>
+            </picker>
+            <text class="time-sep">至</text>
+            <picker mode="time" value="{{regCloseTime}}" bindchange="onRegCloseTime">
+              <view class="form-input time-input">{{regCloseTime}}</view>
+            </picker>
+          </view>
         </view>
         <view class="form-group">
           <text class="form-label">老板称呼 <text style="color:var(--red)">*</text></text>
@@ -41,6 +52,10 @@
         <view class="form-group">
           <text class="form-label">手机号</text>
           <input class="form-input" type="tel" placeholder="输入手机号" bindinput="onRegPhoneInput"/>
+        </view>
+        <view class="form-group">
+          <text class="form-label">微信号（选填）</text>
+          <input class="form-input" placeholder="微信号" bindinput="onRegWechatInput"/>
         </view>
         <view class="form-group">
           <text class="form-label">管理密码 <text style="color:var(--red)">*</text></text>
@@ -61,36 +76,83 @@
       <view class="stat-card"><text class="num">{{stats.finished_tables}}</text><text class="label">已结束</text></view>
     </view>
 
-    <!-- 牌桌管理 -->
-    <view class="toolbar">
-      <text class="toolbar-title">🪑 牌桌管理</text>
-      <view class="toolbar-actions">
-        <button class="btn btn-sm btn-primary" bindtap="addTable">＋ 添加</button>
-        <button class="btn btn-sm btn-secondary" bindtap="removeTable">－ 删除空桌</button>
+    <!-- 标签栏 -->
+    <view class="tab-bar">
+      <view class="tab-item {{activeTab === 'tables' ? 'active' : ''}}" data-tab="tables" bindtap="switchTab">🪑 牌桌</view>
+      <view class="tab-item {{activeTab === 'notifs' ? 'active' : ''}}" data-tab="notifs" bindtap="switchTab">
+        🔔 通知
+        <text class="notif-tab-badge" wx:if="{{unreadCount > 0}}">{{unreadCount}}</text>
+      </view>
+      <view class="tab-item {{activeTab === 'logs' ? 'active' : ''}}" data-tab="logs" bindtap="switchTab">📋 日志</view>
+    </view>
+
+    <!-- Tab: 牌桌 -->
+    <view wx:if="{{activeTab === 'tables'}}">
+      <view class="toolbar">
+        <text class="toolbar-title">🪑 牌桌管理</text>
+        <view class="toolbar-actions">
+          <button class="btn btn-sm btn-primary" bindtap="addTable">＋ 添加</button>
+          <button class="btn btn-sm btn-secondary" bindtap="removeTable">－ 删除空桌</button>
+        </view>
+      </view>
+      <view wx:if="{{tables.length === 0}}" class="empty">暂无牌桌</view>
+      <view wx:else class="monitor-list">
+        <view class="monitor-table {{t.status === 'playing' ? 'playing' : ''}}" wx:for="{{tables}}" wx:key="id" id="mon-{{t.id}}">
+          <view class="mon-top">
+            <text class="mon-name">{{t.tableNumber}}</text>
+            <text class="tag tag-{{t.status}}">{{statusMap[t.status]}}</text>
+          </view>
+          <view class="mon-mid">
+            <text>🧑 {{t.currentPlayers}}/{{t.maxPlayers}}人</text>
+            <text wx:if="{{t.ownerNickname}}">👑 {{t.ownerNickname}}</text>
+            <text>🎯 底分 {{t.baseScore}}</text>
+          </view>
+          <view class="mon-players" wx:if="{{t.players && t.players.length > 0}}">
+            <text class="mon-player" wx:for="{{t.players}}" wx:key="id">
+              <text class="mini-avatar" style="background:{{playerColors[index % 4]}}">{{item.nickname.charAt(0)}}</text>
+              {{item.nickname}}
+            </text>
+          </view>
+          <view class="mon-actions" wx:if="{{t.status === 'playing'}}">
+            <button class="btn btn-sm btn-gold" data-tableid="{{t.id}}" bindtap="showContacts">📞 查看联系方式</button>
+          </view>
+        </view>
       </view>
     </view>
 
-    <!-- 牌桌列表 -->
-    <view wx:if="{{tables.length === 0}}" class="empty">暂无牌桌</view>
-    <view class="monitor-list">
-      <view class="monitor-table {{t.status === 'playing' ? 'playing' : ''}}" wx:for="{{tables}}" wx:key="id" id="mon-{{t.id}}">
-        <view class="mon-top">
-          <text class="mon-name">{{t.tableNumber}}</text>
-          <text class="tag tag-{{t.status}}">{{statusMap[t.status]}}</text>
+    <!-- Tab: 通知 -->
+    <view wx:if="{{activeTab === 'notifs'}}">
+      <view class="notif-header">
+        <text class="notif-title">成局通知</text>
+        <button class="btn btn-sm btn-secondary" wx:if="{{notifications.length > 0}}" bindtap="markAllRead">全部已读</button>
+      </view>
+      <view wx:if="{{notifications.length === 0}}" class="empty" style="padding:40rpx 0">
+        <text style="font-size:60rpx">🔔</text>
+        <text style="display:block;margin-top:12rpx">暂无通知</text>
+      </view>
+      <view wx:else class="notif-list">
+        <view class="notif-item {{n.read ? '' : 'unread'}}" wx:for="{{notifications}}" wx:key="id" data-tabid="{{n.tableId}}" bindtap="goToTable">
+          <view class="notif-icon">🀄</view>
+          <view class="notif-body">
+            <text class="notif-msg">{{n.message}}</text>
+            <text class="notif-time">{{n.time}}</text>
+          </view>
+          <text class="notif-read-btn" wx:if="{{!n.read}}" data-idx="{{index}}" bindtap="markRead" catchtap>标已读</text>
         </view>
-        <view class="mon-mid">
-          <text>🧑 {{t.currentPlayers}}/{{t.maxPlayers}}人</text>
-          <text wx:if="{{t.ownerNickname}}">👑 {{t.ownerNickname}}</text>
-          <text>🎯 底分 {{t.baseScore}}</text>
-        </view>
-        <view class="mon-players" wx:if="{{t.players && t.players.length > 0}}">
-          <text class="mon-player" wx:for="{{t.players}}" wx:key="id">
-            <text class="mini-avatar" style="background:{{playerColors[index % 4]}}">{{item.nickname.charAt(0)}}</text>
-            {{item.nickname}}
-          </text>
-        </view>
-        <view class="mon-actions" wx:if="{{t.status === 'playing'}}">
-          <button class="btn btn-sm btn-gold" data-tableid="{{t.id}}" bindtap="showContacts">📞 查看联系方式</button>
+      </view>
+    </view>
+
+    <!-- Tab: 日志 -->
+    <view wx:if="{{activeTab === 'logs'}}">
+      <view wx:if="{{auditLogs.length === 0}}" class="empty" style="padding:40rpx 0">
+        <text style="font-size:60rpx">📋</text>
+        <text style="display:block;margin-top:12rpx">暂无查看记录</text>
+        <text style="display:block;margin-top:8rpx;font-size:24rpx;color:var(--gray-400)">查看玩家联系方式时自动记录</text>
+      </view>
+      <view wx:else class="audit-list">
+        <view class="audit-item" wx:for="{{auditLogs}}" wx:key="id">
+          <view class="audit-left">🀄 {{n.message || '查看联系方式'}}</view>
+          <text class="audit-time">{{n.time}}</text>
         </view>
       </view>
     </view>
@@ -105,13 +167,36 @@
       <view class="contact-player" wx:for="{{contactPlayers}}" wx:key="id">
         <view class="contact-avatar" style="background:{{playerColors[index % 4]}}">{{item.nickname.charAt(0)}}</view>
         <view class="contact-info">
-          <view class="contact-name">{{item.nickname}}<text class="seat-tag">{{item.seatNumber}}号</text></view>
-          <view class="contact-detail">📞 {{item.phone || '未提供'}}</view>
+          <view class="contact-name">
+            {{item.isOwner ? '👑 ' : ''}}{{item.nickname}}
+            <text class="seat-tag">{{item.seatNumber}}号</text>
+          </view>
+          <view class="contact-detail">
+            📞
+            <text wx:if="{{item.revealed}}">{{item.phone || '未提供'}}</text>
+            <text wx:else>{{item.maskedPhone || '未提供'}}</text>
+            <button class="btn btn-sm btn-gold reveal-btn" wx:if="{{!item.revealed && item.phone}}" data-idx="{{index}}" bindtap="showRevealConfirm" catchtap>查看完整</button>
+            <button class="btn btn-sm btn-secondary copy-btn" wx:if="{{item.phone}}" data-phone="{{item.phone}}" bindtap="copyPhone" catchtap>📋 复制</button>
+          </view>
           <view class="contact-detail">💬 {{item.wechatId || '未提供'}}</view>
         </view>
       </view>
     </view>
     <view class="privacy-notice">🔒 该联系方式仅用于本次牌局联系，查看已记录至审计日志</view>
     <button class="btn btn-secondary btn-block" bindtap="closeContactModal">关闭</button>
+  </view>
+</view>
+
+<!-- 查看完整号码确认弹窗 -->
+<view class="modal-overlay center {{showRevealModal ? 'active' : ''}}">
+  <view class="modal center-modal">
+    <view class="confirm-box">
+      <text>确定查看 <text style="font-weight:700">{{revealTargetName}}</text> 的完整手机号码？</text>
+      <text style="display:block;font-size:24rpx;color:var(--gray-400);margin-top:12rpx">此操作将被记录到审计日志</text>
+      <view class="btn-row" style="margin-top:28rpx">
+        <button class="btn btn-secondary" bindtap="cancelReveal">取消</button>
+        <button class="btn btn-gold" bindtap="confirmReveal">确认查看</button>
+      </view>
+    </view>
   </view>
 </view>

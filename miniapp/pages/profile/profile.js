@@ -22,7 +22,7 @@ Page({
     ownerName: '',
   },
 
-  // 预先存储一个最新的 wx.login code，用于手机号解密
+  // 预先存储最新的 wx.login code，用于手机号解密
   phoneCode: '',
 
   onLoad() {
@@ -39,12 +39,9 @@ Page({
     }
     if (player) this.loadPlayer(player);
     this.checkOwner();
-
-    // 预先 wx.login()，存储 code 用于手机号解密
     this.refreshPhoneCode();
   },
 
-  // 刷新 code（手机号按钮点击前调用，确保 code 有效）
   refreshPhoneCode() {
     wx.login({
       success: (res) => {
@@ -81,29 +78,25 @@ Page({
 
   // ===== 微信登录（先弹协议，再登录）=====
   async wechatLoginBtn() {
-    // 1. 检查用户协议
     const agreed = wx.getStorageSync('agreed');
     if (!agreed) {
       try {
         await app.showAgreement();
-      } catch {
-        return; // 用户没同意，退出
+      } catch (e) {
+        return;
       }
     }
 
     wx.showLoading({ title: '登录中...' });
 
     try {
-      // 2. wx.login() 获取 code
       const loginRes = await new Promise((resolve, reject) => {
         wx.login({ success: resolve, fail: reject });
       });
 
-      // 3. 后端 jscode2session → openid
       const data = await api.wechatLogin(loginRes.code);
       const openid = data.openid;
 
-      // 4. 新用户生成随机昵称
       const existing = app.getPlayer();
       const nickname = existing?.nickname || app.generateNickname();
       const bindRes = await api.wechatBindUser({ openid, nickname, avatarUrl: '' });
@@ -116,7 +109,6 @@ Page({
           formNickname: bindRes.nickname,
           wechatNickname: bindRes.nickname,
         });
-      }
       }
 
       wx.hideLoading();
@@ -132,7 +124,7 @@ Page({
     }
   },
 
-  // 获取手机号（微信按钮回调）
+  // ===== 获取手机号 =====
   async onGetPhoneNumber(e) {
     if (e.detail.errMsg !== 'getPhoneNumber:ok') {
       wx.showModal({ title: '授权失败', content: e.detail.errMsg, showCancel: false });
@@ -144,15 +136,12 @@ Page({
 
     wx.showLoading({ title: '获取中...' });
     try {
-      // 新版微信：按钮返回 phoneCode（e.detail.code）
-      // 旧版微信：按钮返回 encryptedData + iv
       const body = { openid };
       if (e.detail.code) {
         body.phoneCode = e.detail.code;
       } else if (e.detail.encryptedData) {
         body.encryptedData = e.detail.encryptedData;
         body.iv = e.detail.iv;
-        // 用预先存储的 wx.login code
         body.code = this.phoneCode;
       } else {
         wx.hideLoading();
@@ -162,7 +151,6 @@ Page({
 
       const data = await api.wechatBindPhone(body);
 
-      // 弹窗让用户确认是否使用此号码
       wx.hideLoading();
       wx.showModal({
         title: '手机号确认',
@@ -220,7 +208,6 @@ Page({
       api.updatePlayer(existing.id, { phone, wechatId, privacySetting })
         .then(data => {
           data.nickname = nickname;
-          // 保留 openid
           if (existing.openid) data.openid = existing.openid;
           save(data);
         })

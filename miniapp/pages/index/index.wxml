@@ -1,5 +1,4 @@
 <view class="container">
-  <!-- 玩家信息栏 -->
   <view class="player-bar" bindtap="goProfile">
     <view class="player-avatar">{{playerName}}</view>
     <view class="player-info">
@@ -9,15 +8,17 @@
     <text class="arrow">›</text>
   </view>
 
-  <!-- 麻将馆列表 -->
   <view class="section-title">🏠 选择麻将馆</view>
-  <view wx:if="{{loading}}" class="loading">加载中...</view>
+  <view wx:if="{{loading}}" class="loading">
+    <view class="spinner"></view>
+    <text>加载中...</text>
+  </view>
   <view wx:elif="{{halls.length === 0}}" class="empty">暂无营业中的麻将馆</view>
   <view wx:else class="hall-list">
     <view class="hall-card" wx:for="{{halls}}" wx:key="id" data-id="{{item.id}}" bindtap="goHall">
       <view class="hall-name">{{item.name}}</view>
       <view class="hall-addr">📍 {{item.address || '地址待补'}}</view>
-      <view class="hall-time">🕐 {{item.openTime || '?'}} - {{item.closeTime || '?'}}</view>
+      <view class="hall-time">🕐 {{item.openTime || '?'}} - {{item.closeTime || '?'}}　📞 {{item.phone || '-'}}</view>
       <view class="hall-bottom">
         <text class="tag tag-waiting">营业中</text>
         <text class="empty-count">{{item.emptyTables}}<text class="small"> / {{item.totalTables}} 空桌</text></text>

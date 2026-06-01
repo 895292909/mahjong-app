@@ -58,6 +58,7 @@
     <text class="legend-item"><text class="dot occupied"></text>已占</text>
     <text class="legend-item"><text class="dot waiting"></text>等待中</text>
     <text class="legend-item"><text class="dot playing"></text>已成局</text>
+    <text class="legend-item"><text style="font-size:24rpx">👑</text>房主</text>
   </view>
 </view>
 
@@ -110,6 +111,12 @@
       <text class="form-label">底分</text>
       <picker mode="selector" range="{{scoreOptions}}" value="{{settingsScore}}" bindchange="onScoreChange">
         <view class="form-input">{{settingsScoreValue}}</view>
+      </picker>
+    </view>
+    <view class="form-group">
+      <text class="form-label">预计开始时间</text>
+      <picker mode="time" value="{{settingsStartTime}}" bindchange="onStartTimeChange">
+        <view class="form-input">{{settingsStartTime || '不设置'}}</view>
       </picker>
     </view>
     <button class="btn btn-gold btn-block" bindtap="saveSettings">保存设置</button>
