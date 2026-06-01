@@ -1,0 +1,139 @@
+/* 牌桌页样式 */
+.hall-info-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+.hall-title { font-size: 32rpx; font-weight: 700; color: var(--green); }
+.online-badge { font-size: 24rpx; color: var(--gold-dark); background: var(--cream-dark); padding: 6rpx 20rpx; border-radius: 20px; }
+
+.table-list { display: block; }
+.table-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 28rpx;
+  box-shadow: var(--shadow);
+  margin-bottom: 24rpx;
+}
+
+/* 麻将桌面 */
+.mahjong-table {
+  position: relative;
+  width: 100%;
+  height: 400rpx;
+  background: radial-gradient(ellipse at center, #3a6b24 0%, var(--green) 50%, var(--green-dark) 100%);
+  border-radius: 50% / 40%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 6rpx solid #5a3a1a;
+  margin-bottom: 16rpx;
+}
+.seat {
+  position: absolute;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 4rpx dashed var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--gray-400);
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.1);
+}
+.seat.occupied { border-style: solid; border-color: var(--gold); }
+.seat.owner { box-shadow: 0 0 0 4rpx var(--gold); }
+.seat .seat-text { color: #fff; }
+.seat .seat-vacant { color: var(--gray-400); font-size: 32rpx; }
+.seat.top { top: -20rpx; left: 50%; transform: translateX(-50%); }
+.seat.right { right: -20rpx; top: 50%; transform: translateY(-50%); }
+.seat.bottom { bottom: -20rpx; left: 50%; transform: translateX(-50%); }
+.seat.left { left: -20rpx; top: 50%; transform: translateY(-50%); }
+
+.table-center { text-align: center; z-index: 1; }
+.table-num { font-size: 40rpx; font-weight: 800; color: var(--gold); text-shadow: 0 2rpx 8rpx rgba(0,0,0,0.5); }
+.table-score { font-size: 22rpx; color: rgba(255,255,255,0.6); }
+
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.table-meta { font-size: 24rpx; color: var(--gray-400); }
+
+/* 图例 */
+.legend {
+  display: flex;
+  gap: 24rpx;
+  padding: 20rpx 24rpx;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  font-size: 24rpx;
+  color: var(--gray-600);
+  flex-wrap: wrap;
+}
+.legend-item { display: flex; align-items: center; gap: 8rpx; }
+.dot { width: 20rpx; height: 20rpx; border-radius: 50%; border: 2rpx solid var(--gray-200); }
+.dot.vacant { background: var(--cream); border-style: dashed; }
+.dot.occupied { background: var(--gold); border-color: var(--gold-dark); }
+.dot.waiting { background: #fff8e1; border-color: #f57f17; }
+.dot.playing { background: #fce4ec; border-color: #c62828; }
+
+/* 座位选择 */
+.seat-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+.seat-opt {
+  width: 45%;
+  padding: 24rpx 0;
+  border: 4rpx solid var(--gray-200);
+  border-radius: var(--radius);
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--gray-600);
+}
+.seat-opt.sel { border-color: var(--green); background: var(--green); color: var(--white); }
+.seat-opt.taken { opacity: 0.5; }
+
+/* 详情弹窗 */
+.detail-body { margin-bottom: 20rpx; }
+.detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx; }
+.detail-tablenum { font-size: 36rpx; font-weight: 700; color: var(--green); }
+.detail-item { display: flex; justify-content: space-between; align-items: center; padding: 20rpx 0; border-bottom: 2rpx solid var(--cream-dark); }
+.detail-seat { font-size: 28rpx; }
+.vacant-text { color: var(--gray-400); }
+.detail-actions { display: flex; gap: 12rpx; }
+
+/* 弹窗 */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 100;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--white);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 40rpx 32rpx;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.modal-title { font-size: 34rpx; font-weight: 600; color: var(--green); margin-bottom: 24rpx; }
+.center-modal { border-radius: var(--radius-lg); max-width: 500rpx; margin: auto; }
+.confirm-box { text-align: center; padding: 20rpx 0; }
+.confirm-box text { font-size: 30rpx; display: block; margin-bottom: 28rpx; }
+.btn-row { display: flex; gap: 20rpx; }
+.btn-row .btn { flex: 1; }

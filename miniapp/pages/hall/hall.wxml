@@ -1,0 +1,131 @@
+<view class="container">
+  <!-- 麻将馆信息 + 在线人数 -->
+  <view class="hall-info-bar">
+    <text class="hall-title">{{hallName}}</text>
+    <text class="online-badge">● {{onlineCount}}人在线</text>
+  </view>
+
+  <!-- 牌桌列表 -->
+  <view wx:if="{{loading}}" class="loading">加载牌桌...</view>
+  <view wx:elif="{{tables.length === 0}}" class="empty">暂无牌桌</view>
+  <view wx:else class="table-list">
+    <view class="table-card" wx:for="{{tables}}" wx:key="id" data-id="{{item.id}}" bindtap="showTableDetail">
+      <!-- 麻将桌面 -->
+      <view class="mahjong-table">
+        <!-- 4个座位 -->
+        <view class="seat top {{item.seats[0].cls}} {{item.seats[0].owner ? 'owner' : ''}}"
+              style="background:{{item.seats[0].color}}"
+              data-tableid="{{item.id}}" data-seat="1" bindtap="tapSeat">
+          <text wx:if="{{item.seats[0].taken}}" class="seat-text">{{item.seats[0].initial}}</text>
+          <text wx:else class="seat-text seat-vacant">+</text>
+        </view>
+        <view class="seat right {{item.seats[1].cls}} {{item.seats[1].owner ? 'owner' : ''}}"
+              style="background:{{item.seats[1].color}}"
+              data-tableid="{{item.id}}" data-seat="2" bindtap="tapSeat">
+          <text wx:if="{{item.seats[1].taken}}" class="seat-text">{{item.seats[1].initial}}</text>
+          <text wx:else class="seat-text seat-vacant">+</text>
+        </view>
+        <view class="seat bottom {{item.seats[2].cls}} {{item.seats[2].owner ? 'owner' : ''}}"
+              style="background:{{item.seats[2].color}}"
+              data-tableid="{{item.id}}" data-seat="3" bindtap="tapSeat">
+          <text wx:if="{{item.seats[2].taken}}" class="seat-text">{{item.seats[2].initial}}</text>
+          <text wx:else class="seat-text seat-vacant">+</text>
+        </view>
+        <view class="seat left {{item.seats[3].cls}} {{item.seats[3].owner ? 'owner' : ''}}"
+              style="background:{{item.seats[3].color}}"
+              data-tableid="{{item.id}}" data-seat="4" bindtap="tapSeat">
+          <text wx:if="{{item.seats[3].taken}}" class="seat-text">{{item.seats[3].initial}}</text>
+          <text wx:else class="seat-text seat-vacant">+</text>
+        </view>
+        <!-- 桌号 -->
+        <view class="table-center">
+          <view class="table-num">{{item.tableNumber}}</view>
+          <view class="table-score">底分 {{item.baseScore}}</view>
+        </view>
+      </view>
+      <!-- 底部信息 -->
+      <view class="table-footer">
+        <text class="tag tag-{{item.status}}">{{statusMap[item.status] || item.status}}</text>
+        <text class="table-meta">{{item.currentPlayers}}/{{item.maxPlayers}}人
+          <text wx:if="{{item.startTime}}"> | {{item.startTime}}</text></text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 图例 -->
+  <view class="legend">
+    <text class="legend-item"><text class="dot vacant"></text>空位</text>
+    <text class="legend-item"><text class="dot occupied"></text>已占</text>
+    <text class="legend-item"><text class="dot waiting"></text>等待中</text>
+    <text class="legend-item"><text class="dot playing"></text>已成局</text>
+  </view>
+</view>
+
+<!-- 座位选择弹窗 -->
+<view class="modal-overlay {{showSeatModal ? 'active' : ''}}">
+  <view class="modal">
+    <view class="modal-title">选择座位</view>
+    <view class="seat-options">
+      <view class="seat-opt {{selectedSeat === 1 ? 'sel' : ''}} {{seatTaken[1] ? 'taken' : ''}}"
+            wx:for="{{[1,2,3,4]}}" wx:key="*this"
+            data-seat="{{item}}" bindtap="selectSeat">
+        {{item}}号位<text wx:if="{{seatTaken[item]}}">（已占）</text>
+      </view>
+    </view>
+    <button class="btn btn-primary btn-block" bindtap="confirmJoin">确认加入</button>
+    <button class="btn btn-secondary btn-block" bindtap="closeModal">取消</button>
+  </view>
+</view>
+
+<!-- 详情弹窗 -->
+<view class="modal-overlay {{showDetailModal ? 'active' : ''}}">
+  <view class="modal">
+    <view class="modal-title">牌桌详情</view>
+    <view class="detail-body" wx:if="{{detailTable}}">
+      <view class="detail-header">
+        <text class="detail-tablenum">{{detailTable.tableNumber}}</text>
+        <text class="tag tag-{{detailTable.status}}">{{statusMap[detailTable.status]}}</text>
+      </view>
+      <view class="detail-item" wx:for="{{detailSeats}}" wx:key="seat" data-playerid="{{item.id}}" data-tableid="{{detailTable.id}}">
+        <view class="detail-seat">
+          <text wx:if="{{item.taken}}">{{item.isOwner ? '👑 ' : '📍 '}}{{item.nickname}}（{{item.seat}}号）</text>
+          <text wx:else class="vacant-text">空位（{{item.seat}}号）</text>
+        </view>
+        <view class="detail-actions">
+          <button wx:if="{{!item.taken && detailTable.status === 'waiting'}}" class="btn btn-sm btn-primary" data-seat="{{item.seat}}" bindtap="quickJoin">加入</button>
+          <button wx:if="{{item.isMe}}" class="btn btn-sm btn-danger" bindtap="confirmLeave">离座</button>
+        </view>
+      </view>
+      <button wx:if="{{isOwner && detailTable.status === 'waiting'}}" class="btn btn-gold btn-block" bindtap="showSettings">⚙️ 设置</button>
+    </view>
+    <button class="btn btn-secondary btn-block" bindtap="closeDetailModal">关闭</button>
+  </view>
+</view>
+
+<!-- 设置弹窗 -->
+<view class="modal-overlay {{showSettingsModal ? 'active' : ''}}">
+  <view class="modal">
+    <view class="modal-title">牌桌设置</view>
+    <view class="form-group">
+      <text class="form-label">底分</text>
+      <picker mode="selector" range="{{scoreOptions}}" value="{{settingsScore}}" bindchange="onScoreChange">
+        <view class="form-input">{{settingsScoreValue}}</view>
+      </picker>
+    </view>
+    <button class="btn btn-gold btn-block" bindtap="saveSettings">保存设置</button>
+    <button class="btn btn-secondary btn-block" bindtap="closeSettingsModal">取消</button>
+  </view>
+</view>
+
+<!-- 离座确认 -->
+<view class="modal-overlay {{showLeaveConfirm ? 'active' : ''}}">
+  <view class="modal center-modal">
+    <view class="confirm-box">
+      <text>确定离开该牌桌吗？</text>
+      <view class="btn-row">
+        <button class="btn btn-secondary" bindtap="closeLeaveConfirm">取消</button>
+        <button class="btn btn-danger" bindtap="doLeave">确认离开</button>
+      </view>
+    </view>
+  </view>
+</view>

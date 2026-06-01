@@ -1,0 +1,49 @@
+<view class="container">
+  <!-- 微信登录/个人信息区 -->
+  <view class="card">
+    <view wx:if="{{wechatLogged}}" class="profile-wechat">
+      <view class="avatar-lg">{{wechatNickname.charAt(0)}}</view>
+      <view class="profile-nickname">{{wechatNickname}}</view>
+      <view class="profile-phone">{{wechatPhone || '未绑定手机号'}}</view>
+    </view>
+    <view wx:else>
+      <button class="btn btn-gold btn-block" bindtap="wechatLoginBtn">微信登录</button>
+      <text class="form-hint" style="display:block;text-align:center;margin-top:12rpx">登录后获取 openid 绑定账号</text>
+    </view>
+  </view>
+
+  <!-- 个人信息表单 -->
+  <view class="card">
+    <view class="form-group">
+      <text class="form-label">昵称 <text style="color:var(--red)">*</text></text>
+      <input class="form-input" placeholder="输入昵称" value="{{formNickname}}" bindinput="onNicknameInput"/>
+    </view>
+    <view class="form-group">
+      <text class="form-label">手机号 <text style="color:var(--red)">*</text></text>
+      <view class="phone-row">
+        <input class="form-input" type="tel" placeholder="输入手机号" value="{{formPhone}}" bindinput="onPhoneInput" style="flex:1"/>
+        <button class="btn btn-sm btn-secondary" wx:if="{{wechatLogged && !formPhone}}" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber" style="flex-shrink:0">获取</button>
+      </view>
+    </view>
+    <view class="form-group">
+      <text class="form-label">微信号（选填）</text>
+      <input class="form-input" placeholder="输入微信号" value="{{formWechat}}" bindinput="onWechatInput"/>
+    </view>
+    <view class="form-group">
+      <text class="form-label">联系方式可见性</text>
+      <picker mode="selector" range="{{privacyOptions}}" value="{{privacyIdx}}" bindchange="onPrivacyChange">
+        <view class="form-input">{{privacyText}}</view>
+      </picker>
+      <text class="form-hint">同局模式下，只有同一牌桌的玩家可以查看你的联系方式</text>
+    </view>
+    <button class="btn btn-primary btn-block" bindtap="saveProfile">保存</button>
+  </view>
+
+  <!-- 老板退出 -->
+  <view wx:if="{{hasOwner}}" class="card" style="margin-top:20rpx">
+    <view class="owner-info">
+      <text>老板：{{ownerName}}</text>
+      <button class="btn btn-sm btn-danger" bindtap="logoutOwner">退出登录</button>
+    </view>
+  </view>
+</view>

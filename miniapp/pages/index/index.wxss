@@ -1,0 +1,54 @@
+/* 首页样式 */
+.player-bar {
+  display: flex;
+  align-items: center;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 24rpx 28rpx;
+  box-shadow: var(--shadow);
+  margin-bottom: 28rpx;
+}
+.player-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--green-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: 700;
+  margin-right: 20rpx;
+}
+.player-info { flex: 1; }
+.player-nickname { font-size: 30rpx; font-weight: 600; }
+.player-placeholder { font-size: 26rpx; color: var(--gray-400); }
+.arrow { font-size: 36rpx; color: var(--gray-200); }
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--gray-600);
+  margin-bottom: 20rpx;
+}
+
+.hall-list { display: block; }
+.hall-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 28rpx;
+  box-shadow: var(--shadow);
+  margin-bottom: 20rpx;
+  border-left: 8rpx solid var(--gold);
+}
+.hall-name { font-size: 34rpx; font-weight: 700; color: var(--green); margin-bottom: 8rpx; }
+.hall-addr, .hall-time { font-size: 26rpx; color: var(--gray-400); margin-bottom: 4rpx; }
+.hall-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20rpx;
+}
+.empty-count { font-size: 36rpx; font-weight: 700; color: var(--red); }
+.empty-count .small { font-size: 26rpx; font-weight: 400; color: var(--gray-400); }

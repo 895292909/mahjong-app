@@ -1,0 +1,117 @@
+<view class="container">
+  <!-- ===== 登录 ===== -->
+  <view wx:if="{{!loggedIn}}" class="login-box">
+    <view class="login-card">
+      <!-- Tab 切换 -->
+      <view class="login-tabs">
+        <view class="login-tab {{loginTab === 'login' ? 'active' : ''}}" data-tab="login" bindtap="switchLoginTab">登录</view>
+        <view class="login-tab {{loginTab === 'register' ? 'active' : ''}}" data-tab="register" bindtap="switchLoginTab">入驻</view>
+      </view>
+
+      <!-- 登录表单 -->
+      <view wx:if="{{loginTab === 'login'}}">
+        <view class="form-group">
+          <text class="form-label">选择麻将馆</text>
+          <picker mode="selector" range="{{hallOptions}}" value="{{loginHallIdx}}" bindchange="onHallChange">
+            <view class="form-input">{{loginHallName || '请选择'}}</view>
+          </picker>
+        </view>
+        <view class="form-group">
+          <text class="form-label">管理密码</text>
+          <input class="form-input" type="password" placeholder="输入管理密码" bindinput="onLoginPassInput"/>
+        </view>
+        <button class="btn btn-primary btn-block" bindtap="doLogin">登录</button>
+      </view>
+
+      <!-- 入驻表单 -->
+      <view wx:else>
+        <view class="form-group">
+          <text class="form-label">麻将馆名称 <text style="color:var(--red)">*</text></text>
+          <input class="form-input" placeholder="如：聚友麻将馆" bindinput="onRegNameInput"/>
+          <text class="form-hint">名称已存在时可加地点区分（如"聚友-海淀店"）</text>
+        </view>
+        <view class="form-group">
+          <text class="form-label">地址（选填）</text>
+          <input class="form-input" placeholder="如：海淀区学院路100号" bindinput="onRegAddrInput"/>
+        </view>
+        <view class="form-group">
+          <text class="form-label">老板称呼 <text style="color:var(--red)">*</text></text>
+          <input class="form-input" placeholder="如：张老板" bindinput="onRegNickInput"/>
+        </view>
+        <view class="form-group">
+          <text class="form-label">手机号</text>
+          <input class="form-input" type="tel" placeholder="输入手机号" bindinput="onRegPhoneInput"/>
+        </view>
+        <view class="form-group">
+          <text class="form-label">管理密码 <text style="color:var(--red)">*</text></text>
+          <input class="form-input" type="password" placeholder="至少4位" bindinput="onRegPassInput"/>
+        </view>
+        <button class="btn btn-gold btn-block" bindtap="doRegister">立即入驻</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 管理面板 ===== -->
+  <view wx:else>
+    <!-- 统计 -->
+    <view class="stats-row">
+      <view class="stat-card"><text class="num">{{stats.total_tables}}</text><text class="label">总桌</text></view>
+      <view class="stat-card"><text class="num">{{stats.waiting_tables}}</text><text class="label">空闲</text></view>
+      <view class="stat-card"><text class="num">{{stats.playing_tables}}</text><text class="label">已成局</text></view>
+      <view class="stat-card"><text class="num">{{stats.finished_tables}}</text><text class="label">已结束</text></view>
+    </view>
+
+    <!-- 牌桌管理 -->
+    <view class="toolbar">
+      <text class="toolbar-title">🪑 牌桌管理</text>
+      <view class="toolbar-actions">
+        <button class="btn btn-sm btn-primary" bindtap="addTable">＋ 添加</button>
+        <button class="btn btn-sm btn-secondary" bindtap="removeTable">－ 删除空桌</button>
+      </view>
+    </view>
+
+    <!-- 牌桌列表 -->
+    <view wx:if="{{tables.length === 0}}" class="empty">暂无牌桌</view>
+    <view class="monitor-list">
+      <view class="monitor-table {{t.status === 'playing' ? 'playing' : ''}}" wx:for="{{tables}}" wx:key="id" id="mon-{{t.id}}">
+        <view class="mon-top">
+          <text class="mon-name">{{t.tableNumber}}</text>
+          <text class="tag tag-{{t.status}}">{{statusMap[t.status]}}</text>
+        </view>
+        <view class="mon-mid">
+          <text>🧑 {{t.currentPlayers}}/{{t.maxPlayers}}人</text>
+          <text wx:if="{{t.ownerNickname}}">👑 {{t.ownerNickname}}</text>
+          <text>🎯 底分 {{t.baseScore}}</text>
+        </view>
+        <view class="mon-players" wx:if="{{t.players && t.players.length > 0}}">
+          <text class="mon-player" wx:for="{{t.players}}" wx:key="id">
+            <text class="mini-avatar" style="background:{{playerColors[index % 4]}}">{{item.nickname.charAt(0)}}</text>
+            {{item.nickname}}
+          </text>
+        </view>
+        <view class="mon-actions" wx:if="{{t.status === 'playing'}}">
+          <button class="btn btn-sm btn-gold" data-tableid="{{t.id}}" bindtap="showContacts">📞 查看联系方式</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 联系方式弹窗 -->
+<view class="modal-overlay {{showContactModal ? 'active' : ''}}">
+  <view class="modal">
+    <view class="modal-title">{{contactTableNumber}} · 联系方式</view>
+    <view class="contact-body">
+      <view class="contact-player" wx:for="{{contactPlayers}}" wx:key="id">
+        <view class="contact-avatar" style="background:{{playerColors[index % 4]}}">{{item.nickname.charAt(0)}}</view>
+        <view class="contact-info">
+          <view class="contact-name">{{item.nickname}}<text class="seat-tag">{{item.seatNumber}}号</text></view>
+          <view class="contact-detail">📞 {{item.phone || '未提供'}}</view>
+          <view class="contact-detail">💬 {{item.wechatId || '未提供'}}</view>
+        </view>
+      </view>
+    </view>
+    <view class="privacy-notice">🔒 该联系方式仅用于本次牌局联系，查看已记录至审计日志</view>
+    <button class="btn btn-secondary btn-block" bindtap="closeContactModal">关闭</button>
+  </view>
+</view>
