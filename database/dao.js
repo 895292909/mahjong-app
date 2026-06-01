@@ -412,6 +412,18 @@ function getHallIdByTableId(tableId) {
   return row ? row.hall_id : null;
 }
 
+// ===== 调试 =====
+function getDbDump() {
+  const db = getDb();
+  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all();
+  const result = {};
+  for (const t of tables) {
+    const name = t.name;
+    result[name] = db.prepare('SELECT * FROM "' + name + '"').all();
+  }
+  return result;
+}
+
 module.exports = {
   getAllHalls, getHallById, getHallByName, createHall, getHallWithTables,
   createPlayer, getPlayerById, getPlayerByOpenid, createPlayerWithWechat, updatePlayerWechatAvatar, getAllPlayers, updatePlayerStatus, updatePlayerContact,
@@ -422,4 +434,5 @@ module.exports = {
   getHallStats,
   getOnlineCountByHall, getHallIdByTableId,
   countTablesByHall, addTable, removeTable,
+  getDbDump,
 };
