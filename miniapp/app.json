@@ -11,6 +11,32 @@
     "navigationBarTextStyle": "white",
     "backgroundColor": "#f5efe6"
   },
+  "tabBar": {
+    "color": "#a89888",
+    "selectedColor": "#2d5016",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/home.png",
+        "selectedIconPath": "images/home-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "images/me.png",
+        "selectedIconPath": "images/me-active.png"
+      },
+      {
+        "pagePath": "pages/owner/owner",
+        "text": "管理",
+        "iconPath": "images/manage.png",
+        "selectedIconPath": "images/manage-active.png"
+      }
+    ]
+  },
   "style": "v2",
   "sitemapLocation": "sitemap.json"
 }

@@ -31,7 +31,7 @@
     </view>
     <view class="form-group">
       <text class="form-label">联系方式可见性</text>
-      <picker mode="selector" range="{{privacyOptions}}" value="{{privacyIdx}}" bindchange="onPrivacyChange">
+      <picker mode="selector" range="{{privacyOptions}}" range-key="name" value="{{privacyIdx}}" bindchange="onPrivacyChange">
         <view class="form-input">{{privacyText}}</view>
       </picker>
       <text class="form-hint">同局模式下，只有同一牌桌的玩家可以查看你的联系方式</text>

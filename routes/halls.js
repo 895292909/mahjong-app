@@ -39,6 +39,7 @@ router.get('/:id', (req, res) => {
       baseScore: t.base_score,
       ownerNickname: t.ownerNickname,
       players: (t.players || []).map(p => ({
+        id: p.id,
         nickname: p.nickname,
         seatNumber: p.seat_number,
         isOwner: !!p.is_owner,

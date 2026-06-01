@@ -10,7 +10,32 @@
 .profile-nickname { font-size: 34rpx; font-weight: 600; }
 .profile-phone { font-size: 26rpx; color: var(--gray-400); margin-top: 8rpx; margin-bottom: 16rpx; }
 
-.phone-row { display: flex; gap: 12rpx; }
+/* 手机号行：修复输入框被压缩 */
+.phone-row {
+  display: flex;
+  gap: 12rpx;
+  align-items: center;
+}
+.phone-row .form-input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
+/* 修复 picker 文字显示不全 */
+picker .form-input {
+  padding: 22rpx 28rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 修复输入框文字被裁剪 */
+page .form-input {
+  line-height: 1.4;
+  height: auto;
+  min-height: 88rpx;
+}
 
 .owner-info { display: flex; justify-content: space-between; align-items: center; }
 .owner-info text { font-size: 26rpx; color: var(--gray-600); }
