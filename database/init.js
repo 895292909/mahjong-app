@@ -6,7 +6,10 @@ let pool;
 
 function getDb() {
   if (!pool) {
-    pool = new Pool({ connectionString: pgConnectionString });
+    pool = new Pool({
+      connectionString: pgConnectionString,
+      ssl: { rejectUnauthorized: false },
+    });
   }
   return pool;
 }

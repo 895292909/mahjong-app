@@ -67,4 +67,7 @@ initDatabase().then(() => {
   server.listen(PORT, () => {
     console.log(`麻将馆管理系统运行在 http://localhost:${PORT}`);
   });
+}).catch(err => {
+  console.error('数据库初始化失败:', err.message);
+  process.exit(1);
 });
