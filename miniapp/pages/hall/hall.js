@@ -177,7 +177,12 @@ Page({
   quickJoin(e) {
     const seat = parseInt(e.currentTarget.dataset.seat);
     const player = app.getPlayer();
-    if (!player) { wx.showToast({ title: '请先设置个人信息', icon: 'none' }); return; }
+    if (!player || !player.id) {
+      wx.showModal({ title: '提示', content: '请先在「我的」保存个人信息', success: () => {
+        wx.navigateTo({ url: '/pages/profile/profile' });
+      }});
+      return;
+    }
     this.data.joinTarget = { tableId: this.data.detailTable.id, seatNumber: seat };
     this.setData({ showDetailModal: false });
     this.joinTable();
@@ -208,7 +213,10 @@ Page({
   // ===== 离座 =====
   confirmLeave() {
     const player = app.getPlayer();
-    if (!player) return;
+    if (!player || !player.id) {
+      wx.showModal({ title: '提示', content: '请先在「我的」保存个人信息', showCancel: false });
+      return;
+    }
     this.data.leaveTarget = { tableId: this.data.detailTable.id, playerId: player.id };
     this.setData({ showLeaveConfirm: true, showDetailModal: false });
   },
