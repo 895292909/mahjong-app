@@ -33,9 +33,11 @@ async function initDatabase() {
     -- 表2：玩家
     CREATE TABLE IF NOT EXISTS players (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      openid VARCHAR(100) UNIQUE,
       nickname VARCHAR(50) NOT NULL,
       phone VARCHAR(255),
       wechat_id VARCHAR(50),
+      avatar_url VARCHAR(255),
       privacy_setting VARCHAR(20) DEFAULT 'game_only' CHECK(privacy_setting IN ('game_only','always','never')),
       current_table_id INTEGER,
       status VARCHAR(20) DEFAULT 'offline' CHECK(status IN ('online','offline','playing')),

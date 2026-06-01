@@ -8,6 +8,7 @@ const hallsRouter = require('./routes/halls');
 const tablesRouter = require('./routes/tables');
 const playersRouter = require('./routes/players');
 const ownerRouter = require('./routes/owner');
+const wechatRouter = require('./routes/wechat');
 const setupSocket = require('./socket');
 
 const app = express();
@@ -26,6 +27,7 @@ app.use('/api/halls', hallsRouter);
 app.use('/api/tables', tablesRouter);
 app.use('/api/players', playersRouter);
 app.use('/api/owner', ownerRouter);
+app.use('/api/wechat', wechatRouter);
 
 // Socket.IO
 io.on('connection', (socket) => setupSocket(socket, io));

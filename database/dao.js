@@ -43,6 +43,29 @@ function createPlayer({ nickname, phone, wechatId, privacySetting }) {
   return getPlayerById(info.lastInsertRowid);
 }
 
+function getPlayerByOpenid(openid) {
+  return getDb().prepare('SELECT * FROM players WHERE openid = ?').get(openid);
+}
+
+function createPlayerWithWechat({ openid, nickname, avatarUrl }) {
+  const db = getDb();
+  const info = db.prepare(
+    'INSERT INTO players (openid, nickname, avatar_url, privacy_setting) VALUES (?, ?, ?, ?)'
+  ).run(openid, nickname, avatarUrl || null, 'game_only');
+  return getPlayerById(info.lastInsertRowid);
+}
+
+function updatePlayerWechatAvatar(id, { openid, nickname, avatarUrl }) {
+  const sets = [];
+  const params = [];
+  if (openid !== undefined) { sets.push('openid = ?'); params.push(openid); }
+  if (nickname !== undefined) { sets.push('nickname = ?'); params.push(nickname); }
+  if (avatarUrl !== undefined) { sets.push('avatar_url = ?'); params.push(avatarUrl); }
+  if (sets.length === 0) return;
+  params.push(id);
+  getDb().prepare(`UPDATE players SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+}
+
 function getAllPlayers() {
   return getDb().prepare('SELECT id, nickname, privacy_setting, status, created_at FROM players ORDER BY id').all();
 }
@@ -391,7 +414,7 @@ function getHallIdByTableId(tableId) {
 
 module.exports = {
   getAllHalls, getHallById, getHallByName, createHall, getHallWithTables,
-  createPlayer, getPlayerById, getAllPlayers, updatePlayerStatus, updatePlayerContact,
+  createPlayer, getPlayerById, getPlayerByOpenid, createPlayerWithWechat, updatePlayerWechatAvatar, getAllPlayers, updatePlayerStatus, updatePlayerContact,
   getTablesByHall, getTableById, getTablePlayers,
   updateTableSettings, updateTableStatus, getAvailableSeat,
   joinTable, leaveTable,
