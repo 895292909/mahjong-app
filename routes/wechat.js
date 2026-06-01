@@ -49,7 +49,7 @@ router.post('/bind-user', (req, res) => {
 
     const existing = dao.getPlayerByOpenid(openid);
     if (existing) {
-      dao.updatePlayerWechatAvatar(existing.id, { nickname, avatarUrl });
+      // 不覆盖已有昵称，直接返回数据库现有数据
       const player = dao.getPlayerById(existing.id);
       const { decryptPhone } = require('../utils/crypto');
       ok(res, {
