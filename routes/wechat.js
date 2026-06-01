@@ -63,16 +63,52 @@ router.post('/bind-user', (req, res) => {
 
 /**
  * 解密微信手机号（getPhoneNumber 授权）
- * 前端需要先 wx.login() 获取新 code，一起传过来换取 session_key
+ * 支持两种方式：
+ * 1. 旧版：encryptedData + iv + session_key (来自 wx.login 的 code)
+ * 2. 新版：phoneCode（来自 button 的 e.detail.code）
  */
 router.post('/bind-phone', async (req, res) => {
   try {
-    const { openid, encryptedData, iv, code } = req.body;
-    if (!openid || !encryptedData || !iv) return fail(res, '参数不完整');
+    const { openid, encryptedData, iv, code, phoneCode } = req.body;
+    if (!openid) return fail(res, 'openid 必填');
+
+    // 方式A：新版 API — 直接用 phoneCode 换取手机号
+    if (phoneCode) {
+      // 先获取 access_token
+      const tokenUrl = `https://api.weixin.qq.com/cgi-bin/token?appid=${encodeURIComponent(wechat.appid)}&secret=${encodeURIComponent(wechat.secret)}&grant_type=client_credential`;
+      const tokenResp = await fetch(tokenUrl);
+      const tokenData = await tokenResp.json();
+      if (!tokenData.access_token) {
+        return fail(res, `获取 access_token 失败: ${tokenData.errmsg}`, 400);
+      }
+
+      // 用 access_token + phoneCode 获取手机号
+      const phoneUrl = `https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=${tokenData.access_token}`;
+      const phoneResp = await fetch(phoneUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: phoneCode }),
+      });
+      const phoneData = await phoneResp.json();
+      if (phoneData.errcode !== 0) {
+        return fail(res, `获取手机号失败(${phoneData.errcode}): ${phoneData.errmsg}`, 400);
+      }
+
+      const phoneNumber = phoneData.phone_info.phoneNumber;
+      const { encryptPhone } = require('../utils/crypto');
+      const encryptedPhone = encryptPhone(phoneNumber);
+
+      const player = dao.getPlayerByOpenid(openid);
+      if (player) dao.updatePlayerContact(player.id, { phone: encryptedPhone });
+
+      return ok(res, { phone: phoneNumber });
+    }
+
+    // 方式B：旧版 API — encryptedData + iv 解密
+    if (!encryptedData || !iv) return fail(res, '参数不完整');
 
     let sessionKey = sessionCache.get(openid);
     if (code) {
-      // 前端传了新 code，重新换取 session_key
       const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${encodeURIComponent(wechat.appid)}&secret=${encodeURIComponent(wechat.secret)}&js_code=${encodeURIComponent(code)}&grant_type=authorization_code`;
       const wxResp = await fetch(url);
       const wxData = await wxResp.json();
@@ -85,7 +121,6 @@ router.post('/bind-phone', async (req, res) => {
 
     if (!sessionKey) return fail(res, 'session_key 不存在，请先 wx.login', 401);
 
-    // AES-128-CBC 解密（微信规范）
     const aesKey = Buffer.from(sessionKey, 'base64');
     const aesIv = Buffer.from(iv, 'base64');
     const encrypted = Buffer.from(encryptedData, 'base64');
@@ -96,8 +131,6 @@ router.post('/bind-phone', async (req, res) => {
     decoded += decipher.final('utf8');
 
     const data = JSON.parse(decoded);
-
-    // 验证数据属于该 openid
     if (data.watermark && data.watermark.openid !== openid) {
       return fail(res, '手机号校验失败', 400);
     }
@@ -106,15 +139,12 @@ router.post('/bind-phone', async (req, res) => {
     const { encryptPhone } = require('../utils/crypto');
     const encryptedPhone = encryptPhone(phoneNumber);
 
-    // 更新玩家手机号
     const player = dao.getPlayerByOpenid(openid);
-    if (player) {
-      dao.updatePlayerContact(player.id, { phone: encryptedPhone });
-    }
+    if (player) dao.updatePlayerContact(player.id, { phone: encryptedPhone });
 
     ok(res, { phone: phoneNumber });
   } catch (e) {
-    fail(res, '手机号解密失败: ' + e.message);
+    fail(res, '获取手机号失败: ' + e.message);
   }
 });
 
