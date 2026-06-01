@@ -188,8 +188,13 @@ Page({
     const target = this.data.joinTarget;
     if (!target) return;
     const player = app.getPlayer();
-    if (!player) { wx.showToast({ title: '请先设置个人信息', icon: 'none' }); return; }
-    wx.showLoading({ title: '加入中...' });
+    if (!player) { wx.showToast({ title: '请先在「我的」设置个人信息', icon: 'none' }); return; }
+    if (!player.id || player.id === 0) {
+      wx.showModal({ title: '无法加入', content: '请先在「我的」页面保存个人信息，然后再加入牌桌', showCancel: false });
+      return;
+    }
+    console.log('[joinTable] table:', target.tableId, 'player:', player.id, 'seat:', target.seatNumber);
+    wx.showLoading({ title: "加入中..." });
     api.joinTable(target.tableId, player.id, target.seatNumber, this.data.hallId)
       .then(() => {
         wx.hideLoading();
@@ -197,7 +202,7 @@ Page({
         this.setData({ showSeatModal: false });
         this.loadTablesSilent();
       })
-      .catch(err => { wx.hideLoading(); wx.showToast({ title: err.message, icon: 'none' }); });
+      .catch(err => { wx.hideLoading(); wx.showModal({ title: '加入失败', content: err.message, showCancel: false }); });
   },
 
   // ===== 离座 =====
