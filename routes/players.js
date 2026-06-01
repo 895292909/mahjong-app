@@ -72,8 +72,9 @@ router.put('/:id', (req, res) => {
     const player = dao.getPlayerById(req.params.id);
     if (!player) return fail(res, '玩家不存在', 404);
 
-    const { phone, wechatId, privacySetting } = req.body;
+    const { nickname, phone, wechatId, privacySetting } = req.body;
     const updates = {};
+    if (nickname !== undefined) dao.updateNickname(player.id, nickname);
     if (phone !== undefined) updates.phone = encryptPhone(phone);
     if (wechatId !== undefined) updates.wechatId = wechatId;
     if (privacySetting !== undefined) {
@@ -83,11 +84,13 @@ router.put('/:id', (req, res) => {
       updates.privacySetting = privacySetting;
     }
 
-    dao.updatePlayerContact(player.id, {
-      phone: 'phone' in updates ? updates.phone : undefined,
-      wechatId: 'wechatId' in updates ? updates.wechatId : undefined,
-      privacySetting: 'privacySetting' in updates ? updates.privacySetting : undefined,
-    });
+    if (Object.keys(updates).length > 0) {
+      dao.updatePlayerContact(player.id, {
+        phone: 'phone' in updates ? updates.phone : undefined,
+        wechatId: 'wechatId' in updates ? updates.wechatId : undefined,
+        privacySetting: 'privacySetting' in updates ? updates.privacySetting : undefined,
+      });
+    }
 
     const updated = dao.getPlayerById(player.id);
     const data = {

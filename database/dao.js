@@ -91,6 +91,10 @@ function updatePlayerContact(id, { phone, wechatId, privacySetting }) {
   getDb().prepare(`UPDATE players SET ${sets.join(', ')} WHERE id = ?`).run(...params);
 }
 
+function updateNickname(id, nickname) {
+  getDb().prepare('UPDATE players SET nickname = ? WHERE id = ?').run(nickname, id);
+}
+
 // ===== 牌桌 =====
 function getTablesByHall(hallId) {
   const tables = getDb().prepare(`
@@ -426,7 +430,7 @@ function getDbDump() {
 
 module.exports = {
   getAllHalls, getHallById, getHallByName, createHall, getHallWithTables,
-  createPlayer, getPlayerById, getPlayerByOpenid, createPlayerWithWechat, updatePlayerWechatAvatar, getAllPlayers, updatePlayerStatus, updatePlayerContact,
+  createPlayer, getPlayerById, getPlayerByOpenid, createPlayerWithWechat, updatePlayerWechatAvatar, getAllPlayers, updatePlayerStatus, updatePlayerContact, updateNickname,
   getTablesByHall, getTableById, getTablePlayers,
   updateTableSettings, updateTableStatus, getAvailableSeat,
   joinTable, leaveTable,
