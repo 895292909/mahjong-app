@@ -1,8 +1,8 @@
 var api = require('../../utils/api');
 var app = getApp();
 
-const STATUS_MAP = { waiting: '等待中', playing: '已成局', finished: '已结束' };
-const PLAYER_COLORS = ['#e84a5f', '#4a90d9', '#f5a623', '#7ed321'];
+var STATUS_MAP = { waiting: '等待中', playing: '已成局', finished: '已结束' };
+var PLAYER_COLORS = ['#e84a5f', '#4a90d9', '#f5a623', '#7ed321'];
 
 Page({
   data: {
