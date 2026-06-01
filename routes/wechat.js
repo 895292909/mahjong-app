@@ -165,4 +165,30 @@ router.post('/bind-phone', async (req, res) => {
   }
 });
 
+// 临时：绑定 openid 到已有玩家
+router.post('/admin-bind', (req, res) => {
+  try {
+    const { openid, playerId } = req.body;
+    if (!openid || !playerId) return fail(res, '参数不完整');
+    const { getDb } = require('../database/init');
+    getDb().prepare('UPDATE players SET openid = ? WHERE id = ?').run(openid, playerId);
+    ok(res, { ok: true });
+  } catch (e) {
+    fail(res, e.message);
+  }
+});
+
+// 临时：删除玩家
+router.post('/admin-delete', (req, res) => {
+  try {
+    const { playerId } = req.body;
+    if (!playerId) return fail(res, '参数不完整');
+    const { getDb } = require('../database/init');
+    getDb().prepare('DELETE FROM players WHERE id = ?').run(playerId);
+    ok(res, { ok: true });
+  } catch (e) {
+    fail(res, e.message);
+  }
+});
+
 module.exports = router;
