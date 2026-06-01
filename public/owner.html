@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>老板管理</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <a href="/" class="back-btn">‹</a>
+      <h1 id="ownerHeaderTitle">老板管理</h1>
+    </div>
+    <div class="header-right">
+      <div class="notif-bell" id="notifBell" onclick="toggleNotifPanel()" style="display:none">
+        🔔
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </div>
+      <button class="btn btn-sm btn-secondary" id="logoutBtn" onclick="logout()" style="display:none;color:#fff;background:rgba(255,255,255,.15);font-size:12px">退出</button>
+    </div>
+  </div>
+
+  <div class="container owner-page">
+    <!-- ========== Login ========== -->
+    <div id="loginBox">
+      <div style="background:var(--white);border-radius:var(--radius-lg);padding:28px 24px;box-shadow:var(--shadow);max-width:360px;margin:40px auto">
+        <div style="display:flex;margin-bottom:20px;border-radius:8px;overflow:hidden;border:1.5px solid var(--green)">
+          <div class="login-tab active" onclick="switchLoginTab('login')" style="flex:1;padding:10px;text-align:center;font-size:14px;font-weight:600;cursor:pointer;background:var(--green);color:#fff;transition:.2s">登录</div>
+          <div class="login-tab" onclick="switchLoginTab('register')" style="flex:1;padding:10px;text-align:center;font-size:14px;font-weight:600;cursor:pointer;background:var(--gray-50);color:var(--gray-600);transition:.2s">入驻</div>
+        </div>
+        <div id="loginError" style="background:#fce4ec;color:var(--red);border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:12px;display:none"></div>
+
+        <!-- Login form -->
+        <div id="loginForm">
+          <div class="form-group">
+            <label>选择麻将馆</label>
+            <select id="hallSelect"></select>
+          </div>
+          <div class="form-group">
+            <label>管理密码</label>
+            <input type="password" id="loginPass" placeholder="输入管理密码" onkeydown="if(event.key==='Enter')login()">
+          </div>
+          <button class="btn btn-primary btn-block" id="loginBtn" onclick="login()">登录</button>
+        </div>
+
+        <!-- Register form -->
+        <div id="registerForm" style="display:none">
+          <div class="form-group">
+            <label>麻将馆名称 <span style="color:var(--red)">*</span></label>
+            <input type="text" id="regHallName" placeholder="如：聚友麻将馆" maxlength="50">
+            <div class="hint">如果名称已存在，可添加地点区分（如"聚友-海淀店"）</div>
+          </div>
+          <div class="form-group">
+            <label>地址（选填）</label>
+            <input type="text" id="regAddress" placeholder="如：海淀区学院路100号" maxlength="100">
+          </div>
+          <div class="form-group">
+            <label>营业时间（选填）</label>
+            <div style="display:flex;gap:8px">
+              <input type="time" id="regOpenTime" value="09:00" style="flex:1">
+              <span style="line-height:40px;color:var(--gray-400)">至</span>
+              <input type="time" id="regCloseTime" value="02:00" style="flex:1">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>老板称呼 <span style="color:var(--red)">*</span></label>
+            <input type="text" id="regName" placeholder="如：张老板" maxlength="20">
+          </div>
+          <div class="form-group">
+            <label>手机号</label>
+            <input type="tel" id="regPhone" placeholder="输入手机号" maxlength="11">
+          </div>
+          <div class="form-group">
+            <label>微信号（选填）</label>
+            <input type="text" id="regWechat" placeholder="输入微信号">
+          </div>
+          <div class="form-group">
+            <label>管理密码 <span style="color:var(--red)">*</span></label>
+            <input type="password" id="regPass" placeholder="设置登录密码（至少4位）">
+          </div>
+          <button class="btn btn-gold btn-block" id="regBtn" onclick="register()">立即入驻</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Admin Panel ========== -->
+    <div class="admin-panel" id="adminPanel">
+      <!-- Stats -->
+      <div class="stats-row" id="statsRow"></div>
+
+      <!-- Tabs -->
+      <div class="owner-tab-bar">
+        <div class="owner-tab active" data-tab="tables" onclick="switchTab('tables')">🪑 牌桌</div>
+        <div class="owner-tab" data-tab="notifs" onclick="switchTab('notifs')">🔔 通知 <span class="tab-badge" id="notifTabBadge" style="display:none">0</span></div>
+        <div class="owner-tab" data-tab="logs" onclick="switchTab('logs')">📋 日志</div>
+      </div>
+
+      <!-- Tab: Tables -->
+      <div class="tab-content" id="tabTables">
+        <div id="tableManagerBar" style="display:none;background:var(--white);border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow);margin-bottom:12px;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;color:var(--gray-600);font-weight:500">🪑 牌桌管理</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-primary" onclick="addTable()" style="font-size:12px">＋ 添加</button>
+            <button class="btn btn-sm btn-secondary" onclick="removeTable()" style="font-size:12px">－ 删除空桌</button>
+          </div>
+        </div>
+        <div id="monitorList"></div>
+      </div>
+
+      <!-- Tab: Notifications -->
+      <div class="tab-content" id="tabNotifs" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;color:var(--gray-400)">成局通知</span>
+          <button class="btn btn-sm btn-secondary" onclick="markAllRead()">全部已读</button>
+        </div>
+        <div id="notifList"></div>
+      </div>
+
+      <!-- Tab: Audit Logs -->
+      <div class="tab-content" id="tabLogs" style="display:none">
+        <div id="auditList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Contact Modal ========== -->
+  <div class="modal-overlay" id="contactModal">
+    <div class="modal" style="position:relative">
+      <button class="btn-close" onclick="closeContactModal()">✕</button>
+      <h2 id="contactModalTitle">玩家联系方式</h2>
+      <div id="contactModalBody"></div>
+      <div class="privacy-notice">
+        <strong>🔒 隐私提示：</strong>该联系方式仅用于本次牌局联系，请勿用于其他用途。查看操作已记录至审计日志。
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Reveal Confirm Modal ========== -->
+  <div class="modal-overlay center" id="revealModal">
+    <div class="modal" style="position:relative">
+      <button class="btn-close" onclick="closeModal('revealModal')">✕</button>
+      <div class="confirm-box">
+        <p>确定查看 <strong id="revealPlayerName"></strong> 的完整手机号码？<br><span style="font-size:13px;color:var(--gray-400)">此操作将被记录到审计日志</span></p>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="closeModal('revealModal')">取消</button>
+          <button class="btn btn-gold reveal-btn" onclick="confirmReveal()">确认查看</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications panel (inline) -->
+  <div id="notifPopover" style="display:none"></div>
+
+  <nav class="bottom-nav">
+    <a href="/"><span class="nav-icon">🏠</span>首页</a>
+    <a href="javascript:void(0)" onclick="requestNotifPermission()" title="开启桌面通知"><span class="nav-icon">🔔</span>通知</a>
+    <a href="/owner.html" class="active"><span class="nav-icon">⚙️</span>管理</a>
+  </nav>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/socket.js"></script>
+  <script src="/js/owner.js"></script>
+</body>
+</html>

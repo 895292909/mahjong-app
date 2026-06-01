@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>牌桌选择</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <a href="/" class="back-btn">‹</a>
+      <h1 id="hallTitle">麻将馆</h1>
+    </div>
+    <div class="header-right">
+      <span class="online-badge" id="onlineBadge">● 0人在线</span>
+      <div class="player-avatar" id="headerAvatarHall" onclick="showProfileHall()">?</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="table-grid" id="tableList">
+      <div class="loading"><div class="spinner"></div>加载牌桌...</div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot vacant"></span>空位</span>
+      <span class="legend-item"><span class="legend-dot occupied"></span>已占</span>
+      <span class="legend-item"><span class="legend-dot waiting"></span>等待中</span>
+      <span class="legend-item"><span class="legend-dot playing"></span>已成局</span>
+      <span class="legend-item"><span class="legend-dot crown">👑</span>房主</span>
+    </div>
+  </div>
+
+  <!-- Table Detail Modal -->
+  <div class="modal-overlay" id="tableModal">
+    <div class="modal" style="position:relative">
+      <button class="btn-close" onclick="closeModal('tableModal')">✕</button>
+      <h2 id="tableModalTitle">牌桌详情</h2>
+      <div id="tableModalBody"></div>
+    </div>
+  </div>
+
+  <!-- Join Confirm Modal -->
+  <div class="modal-overlay" id="joinModal">
+    <div class="modal" style="position:relative">
+      <button class="btn-close" onclick="closeModal('joinModal')">✕</button>
+      <h2>选择座位</h2>
+      <div class="seat-grid" id="seatGrid"></div>
+      <button class="btn btn-primary btn-block" id="joinBtn" onclick="confirmJoin()">确认加入</button>
+      <button class="btn btn-secondary btn-block" onclick="closeModal('joinModal')" style="margin-top:6px">取消</button>
+    </div>
+  </div>
+
+  <!-- Leave Confirm Modal -->
+  <div class="modal-overlay center" id="leaveModal">
+    <div class="modal" style="position:relative">
+      <button class="btn-close" onclick="closeModal('leaveModal')">✕</button>
+      <div class="confirm-box">
+        <p id="leaveConfirmText">确定离开该牌桌吗？</p>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="closeModal('leaveModal')">取消</button>
+          <button class="btn btn-danger" id="leaveConfirmBtn" onclick="confirmLeave()">确认离开</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay center" id="settingsModal">
+    <div class="modal" style="position:relative">
+      <button class="btn-close" onclick="closeModal('settingsModal')">✕</button>
+      <h2>牌桌设置</h2>
+      <div class="form-group">
+        <label>底分</label>
+        <select id="settingsBaseScore">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>预计开始时间</label>
+        <input type="datetime-local" id="settingsStartTime">
+      </div>
+      <button class="btn btn-gold btn-block" onclick="confirmSettings()">保存设置</button>
+      <button class="btn btn-secondary btn-block" onclick="closeModal('settingsModal')" style="margin-top:6px">取消</button>
+    </div>
+  </div>
+
+  <!-- Celebrations container -->
+  <div id="confettiContainer"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/socket.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
