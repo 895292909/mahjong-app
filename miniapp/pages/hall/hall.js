@@ -75,7 +75,7 @@ Page({
           hallName: data.name,
           tables,
           loading: false,
-          onlineCount: data.emptyTables, // 用空桌数替代在线人数
+          onlineCount: data.emptyTables,
         });
       })
       .catch(err => {
@@ -89,13 +89,10 @@ Page({
       .then(data => {
         const tables = this.buildTables(data.tables || []);
         const playing = tables.filter(t => t.status === 'playing');
-
-        // 检测新成局 → 撒花
         if (playing.length > prevPlayingCount) {
           this.showConfetti();
         }
         prevPlayingCount = playing.length;
-
         this.setData({ tables, onlineCount: data.emptyTables });
       })
       .catch(() => {});
@@ -126,22 +123,31 @@ Page({
     });
   },
 
-  // ===== 撒花 =====
   showConfetti() {
     wx.showToast({ title: '🎉 已成局！', icon: 'none' });
   },
 
+  // ===== 检查登录 =====
+  checkLogin: function() {
+    var player = app.getPlayer();
+    if (!player || !player.id) {
+      wx.showModal({
+        title: '需要登录',
+        content: '请先登录后再加入牌桌',
+        success: function() {
+          wx.switchTab({ url: '/pages/profile/profile' });
+        },
+      });
+      return false;
+    }
+    return true;
+  },
+
   // ===== 点击座位 =====
   tapSeat(e) {
+    if (!this.checkLogin()) return;
     const tableId = e.currentTarget.dataset.tableid;
     const seat = e.currentTarget.dataset.seat;
-    const player = app.getPlayer();
-    if (!player) {
-      wx.showModal({ title: '提示', content: '请先在「我的」设置个人信息', success: () => {
-        wx.switchTab({ url: '/pages/profile/profile' });
-      }});
-      return;
-    }
     const table = this.data.tables.find(t => t.id === tableId);
     if (!table) return;
     const p = (table.players || []).find(p => p.seatNumber === seat);
@@ -175,14 +181,8 @@ Page({
   closeDetailModal() { this.setData({ showDetailModal: false }); },
 
   quickJoin(e) {
+    if (!this.checkLogin()) return;
     const seat = parseInt(e.currentTarget.dataset.seat);
-    const player = app.getPlayer();
-    if (!player || !player.id) {
-      wx.showModal({ title: '提示', content: '请先在「我的」保存个人信息', success: () => {
-        wx.switchTab({ url: '/pages/profile/profile' });
-      }});
-      return;
-    }
     this.data.joinTarget = { tableId: this.data.detailTable.id, seatNumber: seat };
     this.setData({ showDetailModal: false });
     this.joinTable();
@@ -192,12 +192,9 @@ Page({
   joinTable() {
     const target = this.data.joinTarget;
     if (!target) return;
-    const player = app.getPlayer();
-    if (!player) { wx.showToast({ title: '请先在「我的」设置个人信息', icon: 'none' }); return; }
-    if (!player.id || player.id === 0) {
-      wx.showModal({ title: '无法加入', content: '请先在「我的」页面保存个人信息，然后再加入牌桌', showCancel: false });
-      return;
-    }
+    if (!this.checkLogin()) return;
+    var player = app.getPlayer();
+    if (!player || !player.id) return;
     console.log('[joinTable] table:', target.tableId, 'player:', player.id, 'seat:', target.seatNumber);
     wx.showLoading({ title: "加入中..." });
     api.joinTable(target.tableId, player.id, target.seatNumber, this.data.hallId)
@@ -212,11 +209,8 @@ Page({
 
   // ===== 离座 =====
   confirmLeave() {
-    const player = app.getPlayer();
-    if (!player || !player.id) {
-      wx.showModal({ title: '提示', content: '请先在「我的」保存个人信息', showCancel: false });
-      return;
-    }
+    if (!this.checkLogin()) return;
+    var player = app.getPlayer();
     this.data.leaveTarget = { tableId: this.data.detailTable.id, playerId: player.id };
     this.setData({ showLeaveConfirm: true, showDetailModal: false });
   },
@@ -224,15 +218,17 @@ Page({
   doLeave() {
     const target = this.data.leaveTarget;
     if (!target) return;
+    if (!this.checkLogin()) return;
+    var player = app.getPlayer();
     wx.showLoading({ title: '离座中...' });
-    api.leaveTable(target.tableId, target.playerId, this.data.hallId)
+    api.leaveTable(target.tableId, target.playerId || player.id, this.data.hallId)
       .then(() => {
         wx.hideLoading();
         wx.showToast({ title: '已离座', icon: 'none' });
         this.setData({ showLeaveConfirm: false });
         this.loadTablesSilent();
       })
-      .catch(err => { wx.hideLoading(); wx.showToast({ title: err.message, icon: 'none' }); });
+      .catch(err => { wx.hideLoading(); wx.showModal({ title: '离座失败', content: err.message, showCancel: false }); });
   },
 
   // ===== 设置 =====

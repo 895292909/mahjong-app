@@ -51,10 +51,27 @@ router.post('/bind-user', (req, res) => {
     if (existing) {
       dao.updatePlayerWechatAvatar(existing.id, { nickname, avatarUrl });
       const player = dao.getPlayerById(existing.id);
-      ok(res, { id: player.id, nickname: player.nickname, avatarUrl: player.avatar_url, isNew: false });
+      const { decryptPhone } = require('../utils/crypto');
+      ok(res, {
+        id: player.id,
+        nickname: player.nickname,
+        phone: player.phone ? decryptPhone(player.phone) : null,
+        wechatId: player.wechat_id,
+        privacySetting: player.privacy_setting,
+        avatarUrl: player.avatar_url,
+        isNew: false,
+      });
     } else {
       const player = dao.createPlayerWithWechat({ openid, nickname, avatarUrl });
-      ok(res, { id: player.id, nickname: player.nickname, avatarUrl: player.avatar_url, isNew: true }, 201);
+      ok(res, {
+        id: player.id,
+        nickname: player.nickname,
+        phone: null,
+        wechatId: null,
+        privacySetting: player.privacy_setting,
+        avatarUrl: player.avatar_url,
+        isNew: true,
+      }, 201);
     }
   } catch (e) {
     fail(res, e.message);
