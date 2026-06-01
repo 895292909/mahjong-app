@@ -1,7 +1,5 @@
-const path = require('path');
-
 module.exports = {
-  dbPath: path.join(__dirname, '..', 'database', 'mahjong.db'),
+  pgConnectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/mahjong',
   encryption: {
     key: process.env.ENCRYPTION_KEY || 'mahjong-secret-key-2024',
     algorithm: 'aes-256-cbc',

@@ -3,10 +3,9 @@ const router = express.Router();
 const dao = require('../database/dao');
 const { ok, fail } = require('../middleware/auth');
 
-// GET /api/tables/hall/:hallId - 获取某麻将馆所有牌桌
-router.get('/hall/:hallId', (req, res) => {
+router.get('/hall/:hallId', async (req, res) => {
   try {
-    const tables = dao.getTablesByHall(req.params.hallId);
+    const tables = await dao.getTablesByHall(req.params.hallId);
     const data = tables.map(t => ({
       id: t.id,
       hallId: t.hall_id,
@@ -32,10 +31,9 @@ router.get('/hall/:hallId', (req, res) => {
   }
 });
 
-// GET /api/tables/:id - 获取牌桌详情
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const t = dao.getTableById(req.params.id);
+    const t = await dao.getTableById(req.params.id);
     if (!t) return fail(res, '牌桌不存在', 404);
     const data = {
       id: t.id,
@@ -62,12 +60,11 @@ router.get('/:id', (req, res) => {
   }
 });
 
-// POST /api/tables/join - 加入牌桌
-router.post('/join', (req, res) => {
+router.post('/join', async (req, res) => {
   try {
     const { tableId, playerId, seatNumber } = req.body;
     if (!tableId || !playerId) return fail(res, 'tableId和playerId必填');
-    const table = dao.joinTable(tableId, playerId, seatNumber || null);
+    const table = await dao.joinTable(tableId, playerId, seatNumber || null);
     const data = {
       id: table.id,
       tableNumber: table.table_number,
@@ -87,12 +84,11 @@ router.post('/join', (req, res) => {
   }
 });
 
-// POST /api/tables/leave - 离开牌桌
-router.post('/leave', (req, res) => {
+router.post('/leave', async (req, res) => {
   try {
     const { tableId, playerId } = req.body;
     if (!tableId || !playerId) return fail(res, 'tableId和playerId必填');
-    const table = dao.leaveTable(tableId, playerId);
+    const table = await dao.leaveTable(tableId, playerId);
     const data = {
       id: table.id,
       tableNumber: table.table_number,
@@ -111,18 +107,15 @@ router.post('/leave', (req, res) => {
   }
 });
 
-// PUT /api/tables/:id/settings - 房主修改设置
-router.put('/:id/settings', (req, res) => {
+router.put('/:id/settings', async (req, res) => {
   try {
-    const table = dao.getTableById(req.params.id);
+    const table = await dao.getTableById(req.params.id);
     if (!table) return fail(res, '牌桌不存在', 404);
-
     const { playerId, baseScore, startTime } = req.body;
     if (playerId && table.owner_id !== playerId) {
       return fail(res, '只有房主才能修改设置');
     }
-
-    const updated = dao.updateTableSettings(table.id, { baseScore, startTime });
+    const updated = await dao.updateTableSettings(table.id, { baseScore, startTime });
     const data = {
       id: updated.id,
       tableNumber: updated.table_number,

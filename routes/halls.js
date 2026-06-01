@@ -3,33 +3,31 @@ const router = express.Router();
 const dao = require('../database/dao');
 const { ok, fail } = require('../middleware/auth');
 
-// GET /api/halls - 获取所有麻将馆列表（含空桌数统计）
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const halls = dao.getAllHalls();
-    const data = halls.map(h => ({
+    const halls = await dao.getAllHalls();
+    const data = await Promise.all(halls.map(async h => ({
       id: h.id,
       name: h.name,
       address: h.address,
       phone: h.phone,
       openTime: h.open_time,
       closeTime: h.close_time,
-      totalTables: dao.getHallStats(h.id).total_tables,
+      totalTables: (await dao.getHallStats(h.id)).total_tables,
       emptyTables: h.available_tables,
-    }));
+    })));
     ok(res, data);
   } catch (e) {
     fail(res, e.message);
   }
 });
 
-// GET /api/halls/:id - 获取单个麻将馆详情+所有牌桌状态
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const hall = dao.getHallById(req.params.id);
+    const hall = await dao.getHallById(req.params.id);
     if (!hall) return fail(res, '麻将馆不存在', 404);
-    const stats = dao.getHallStats(hall.id);
-    const tables = dao.getTablesByHall(hall.id);
+    const stats = await dao.getHallStats(hall.id);
+    const tables = await dao.getTablesByHall(hall.id);
     const tableData = tables.map(t => ({
       id: t.id,
       tableNumber: t.table_number,

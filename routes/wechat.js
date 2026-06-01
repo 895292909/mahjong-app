@@ -5,32 +5,26 @@ const dao = require('../database/dao');
 const { ok, fail } = require('../middleware/auth');
 const { wechat } = require('../config/database');
 
-// 内存 session_key 缓存（生产环境建议用 Redis）
 const sessionCache = new Map();
 
-/**
- * 微信登录：code → jscode2session → openid
- */
 router.post('/login', async (req, res) => {
   try {
     const { code } = req.body;
     if (!code) return fail(res, 'code 必填');
 
-    const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${wechat.appid}&secret=${wechat.secret}&js_code=${code}&grant_type=authorization_code`;
+    const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${encodeURIComponent(wechat.appid)}&secret=${encodeURIComponent(wechat.secret)}&js_code=${encodeURIComponent(code)}&grant_type=authorization_code`;
     const wxResp = await fetch(url);
     const wxData = await wxResp.json();
 
     if (wxData.errcode) {
-      return fail(res, `微信登录失败: ${wxData.errmsg}`, 400);
+      return fail(res, `微信登录失败(${wxData.errcode}): ${wxData.errmsg}`, 400);
     }
 
     const { openid, session_key } = wxData;
 
-    // 查找是否已注册
-    const existing = dao.getPlayerByOpenid(openid);
+    const existing = await dao.getPlayerByOpenid(openid);
     const isNew = !existing;
 
-    // 缓存 session_key 用于后续解密
     sessionCache.set(openid, session_key);
 
     ok(res, { openid, isNew });
@@ -39,18 +33,14 @@ router.post('/login', async (req, res) => {
   }
 });
 
-/**
- * 绑定用户信息（创建或更新玩家）
- */
-router.post('/bind-user', (req, res) => {
+router.post('/bind-user', async (req, res) => {
   try {
     const { openid, nickname, avatarUrl } = req.body;
     if (!openid || !nickname) return fail(res, 'openid 和 nickname 必填');
 
-    const existing = dao.getPlayerByOpenid(openid);
+    const existing = await dao.getPlayerByOpenid(openid);
     if (existing) {
-      // 不覆盖已有昵称，直接返回数据库现有数据
-      const player = dao.getPlayerById(existing.id);
+      const player = await dao.getPlayerById(existing.id);
       const { decryptPhone } = require('../utils/crypto');
       ok(res, {
         id: player.id,
@@ -62,7 +52,7 @@ router.post('/bind-user', (req, res) => {
         isNew: false,
       });
     } else {
-      const player = dao.createPlayerWithWechat({ openid, nickname, avatarUrl });
+      const player = await dao.createPlayerWithWechat({ openid, nickname, avatarUrl });
       ok(res, {
         id: player.id,
         nickname: player.nickname,
@@ -78,20 +68,12 @@ router.post('/bind-user', (req, res) => {
   }
 });
 
-/**
- * 解密微信手机号（getPhoneNumber 授权）
- * 支持两种方式：
- * 1. 旧版：encryptedData + iv + session_key (来自 wx.login 的 code)
- * 2. 新版：phoneCode（来自 button 的 e.detail.code）
- */
 router.post('/bind-phone', async (req, res) => {
   try {
     const { openid, encryptedData, iv, code, phoneCode } = req.body;
     if (!openid) return fail(res, 'openid 必填');
 
-    // 方式A：新版 API — 直接用 phoneCode 换取手机号
     if (phoneCode) {
-      // 先获取 access_token
       const tokenUrl = `https://api.weixin.qq.com/cgi-bin/token?appid=${encodeURIComponent(wechat.appid)}&secret=${encodeURIComponent(wechat.secret)}&grant_type=client_credential`;
       const tokenResp = await fetch(tokenUrl);
       const tokenData = await tokenResp.json();
@@ -99,7 +81,6 @@ router.post('/bind-phone', async (req, res) => {
         return fail(res, `获取 access_token 失败: ${tokenData.errmsg}`, 400);
       }
 
-      // 用 access_token + phoneCode 获取手机号
       const phoneUrl = `https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=${tokenData.access_token}`;
       const phoneResp = await fetch(phoneUrl, {
         method: 'POST',
@@ -115,13 +96,12 @@ router.post('/bind-phone', async (req, res) => {
       const { encryptPhone } = require('../utils/crypto');
       const encryptedPhone = encryptPhone(phoneNumber);
 
-      const player = dao.getPlayerByOpenid(openid);
-      if (player) dao.updatePlayerContact(player.id, { phone: encryptedPhone });
+      const player = await dao.getPlayerByOpenid(openid);
+      if (player) await dao.updatePlayerContact(player.id, { phone: encryptedPhone });
 
       return ok(res, { phone: phoneNumber });
     }
 
-    // 方式B：旧版 API — encryptedData + iv 解密
     if (!encryptedData || !iv) return fail(res, '参数不完整');
 
     let sessionKey = sessionCache.get(openid);
@@ -156,8 +136,8 @@ router.post('/bind-phone', async (req, res) => {
     const { encryptPhone } = require('../utils/crypto');
     const encryptedPhone = encryptPhone(phoneNumber);
 
-    const player = dao.getPlayerByOpenid(openid);
-    if (player) dao.updatePlayerContact(player.id, { phone: encryptedPhone });
+    const player = await dao.getPlayerByOpenid(openid);
+    if (player) await dao.updatePlayerContact(player.id, { phone: encryptedPhone });
 
     ok(res, { phone: phoneNumber });
   } catch (e) {
@@ -165,26 +145,24 @@ router.post('/bind-phone', async (req, res) => {
   }
 });
 
-// 临时：绑定 openid 到已有玩家
-router.post('/admin-bind', (req, res) => {
+router.post('/admin-bind', async (req, res) => {
   try {
     const { openid, playerId } = req.body;
     if (!openid || !playerId) return fail(res, '参数不完整');
     const { getDb } = require('../database/init');
-    getDb().prepare('UPDATE players SET openid = ? WHERE id = ?').run(openid, playerId);
+    await getDb().query('UPDATE players SET openid = $1 WHERE id = $2', [openid, playerId]);
     ok(res, { ok: true });
   } catch (e) {
     fail(res, e.message);
   }
 });
 
-// 临时：删除玩家
-router.post('/admin-delete', (req, res) => {
+router.post('/admin-delete', async (req, res) => {
   try {
     const { playerId } = req.body;
     if (!playerId) return fail(res, '参数不完整');
     const { getDb } = require('../database/init');
-    getDb().prepare('DELETE FROM players WHERE id = ?').run(playerId);
+    await getDb().query('DELETE FROM players WHERE id = $1', [playerId]);
     ok(res, { ok: true });
   } catch (e) {
     fail(res, e.message);
